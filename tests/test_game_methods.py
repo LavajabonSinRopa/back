@@ -9,6 +9,7 @@ class test_game_utils(unittest.TestCase):
         darth_vader = Player(name = "luke")
         added = []
         for _ in range(100):
+            assert len(added) == len(get_games())
             new_game = Game(name = "DeathStar", creator = darth_vader)
             added.append(new_game.unique_id)
             add_game(new_game)
