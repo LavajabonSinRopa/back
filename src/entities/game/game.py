@@ -1,7 +1,7 @@
 # back/entities/game.py
 
 import uuid
-from entities.player.player import Player
+from ..player.player import Player
 
 class Game:
     def __init__(self, name: str, creator: Player):

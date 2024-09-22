@@ -16,7 +16,7 @@ def create_game(request: CreateGameRequest):
         raise HTTPException(status_code=400, detail="El nombre no puede estar vacío")
 
     # Crear player (creador de la partida) y partida
-    creator = Player(name=request.player_name, is_owner=True)
+    creator = Player(name=request.player_name)
     game = Game(name=request.game_name, creator=creator)
 
     add_game(game)
