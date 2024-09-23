@@ -2,7 +2,7 @@ from fastapi import WebSocket, WebSocketDisconnect
 from entities.game.game_utils import get_listed_games
 import json
 import asyncio
-playersSockets = {}
+playersSockets = {"test_id" : None}
 
 async def public_games(websocket: WebSocket):
     await websocket.accept()
@@ -21,6 +21,7 @@ async def in_game_connection(playerid: str, websocket: WebSocket):
     if not playerid in playersSockets:
         await websocket.send_json({"type": "ERROR", "payload": "No players in Game with this ID"})
     else:
+        await websocket.send_json({"type": "INFO", "payload": "GameSocket connected"})
         playersSockets[playerid] = websocket 
         while True:
             try:
