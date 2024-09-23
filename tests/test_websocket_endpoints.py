@@ -3,7 +3,7 @@ import json
 import websockets
 
 async def test_websocket_connection():
-    uri = "ws://localhost:8000/games"  # Asegúrate de cambiar esto a la URL correcta de tu servidor
+    uri = "ws://localhost:8000/games"
     async with websockets.connect(uri) as websocket:
         try:
             data = await asyncio.wait_for(websocket.recv(), timeout=15)
