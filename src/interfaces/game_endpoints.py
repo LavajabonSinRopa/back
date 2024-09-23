@@ -2,9 +2,9 @@
 
 from fastapi import APIRouter, HTTPException
 from entities.game.game import Game
-from entities.game.game_utils import add_game
+from entities.game.game_utils import add_game, get_games
 from entities.player.player import Player
-from schemas.game_schemas import CreateGameRequest, CreateGameResponse
+from schemas.game_schemas import CreateGameRequest, CreateGameResponse, GameInResponse
 
 router = APIRouter()
 
@@ -22,3 +22,11 @@ def create_game(request: CreateGameRequest):
     add_game(game)
 
     return CreateGameResponse(game_id=game.unique_id, player_id=creator.unique_id)
+
+@router.get("")
+def get_all_games():
+    """Endpoint to request all games"""
+    games = get_games()
+    print(games)
+    games_dict = [GameInResponse(game_id = g.unique_id, game_name = g.name) for g in games.values()]
+    return games_dict
