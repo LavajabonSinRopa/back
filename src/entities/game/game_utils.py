@@ -12,3 +12,14 @@ def print_game(game):
 
 def get_games():
     return games
+
+def get_game_by_id(game_id):
+    """
+    Get a specific game by its unique ID.
+    Args:
+        game_id (str): The unique ID of the game.
+
+    Returns:
+        Game or None: The game object if found, otherwise None.
+    """
+    return games.get(game_id)

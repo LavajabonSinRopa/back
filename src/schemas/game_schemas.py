@@ -11,3 +11,11 @@ class CreateGameRequest(BaseModel):
 class CreateGameResponse(BaseModel):
     player_id: str
     game_id: str
+
+# POST a /games/<game_id>/join
+class JoinGameRequest(BaseModel):
+    player_name: str
+
+# Respuesta de POST a games/<game_id>/join
+class JoinGameResponse(BaseModel):
+    player_id: str

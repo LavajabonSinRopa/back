@@ -10,4 +10,7 @@ class Game:
         self.creator = creator
         self.players = [creator]  # Lista de jugadores con creator añadido autom.
         self.state = "waiting"    # Estado del juego: waiting, started, ended
-        self.board = None         
+        self.board = None       
+
+    def add_player(self, player: Player):
+        self.players.append(player)
