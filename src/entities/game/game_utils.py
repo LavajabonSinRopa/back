@@ -13,6 +13,7 @@ def print_game(game):
 def get_games():
     return games
 
+#temp func until we have BD
 def get_listed_games():
     game_list = []
     for game in games:

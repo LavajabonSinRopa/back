@@ -1,47 +1,47 @@
 from fastapi import WebSocket, WebSocketDisconnect
 from entities.game.game_utils import get_listed_games
-import json
-import asyncio
-playersSockets = {"test_id" : None}
+
+class ConnectionManager:
+    def __init__(self):
+        self.connections: list[WebSocket] = []
+        
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.connections.append(websocket)
+        
+    async def disconnect(self, websocket: WebSocket):
+        if websocket in self.connections:
+            self.connections.remove(websocket)
+    
+    async def send_personal_message(self, message: dict, websocket: WebSocket):
+        try:
+            await websocket.send_json(message)
+        except WebSocketDisconnect:
+            await self.disconnect(websocket)
+    
+    async def broadcast(self, message: dict):
+        for connection in self.connections:
+            try:
+                await connection.send_json(message)
+            except WebSocketDisconnect:
+                await self.disconnect(connection)
+    
+
+public_manager = ConnectionManager()
 
 async def public_games(websocket: WebSocket):
-    await websocket.accept()
+    await public_manager.connect(websocket)
+    print(public_manager.connections)
+    try:
+        games = get_listed_games()
+        games_listWS = {"type": "CreatedGames","payload": games} 
+        await public_manager.send_personal_message(games_listWS, websocket)
+    except WebSocketDisconnect:
+        await public_manager.disconnect(websocket)
+    
     while True:
         try:
-            games = get_listed_games()
-            games_listWS = {"type": "CreatedGames","payload": games}       
-            await websocket.send_json(games_listWS)
+            await websocket.receive_text() # En realidad no espera nada es solo para mantener el socket abierto
         except WebSocketDisconnect:
-            print("UserDisconnect - Close Connection")
+            await public_manager.disconnect(websocket)
             break
-
-
-async def in_game_connection(playerid: str, websocket: WebSocket):
-    await websocket.accept()
-    if not playerid in playersSockets:
-        await websocket.send_json({"type": "ERROR", "payload": "No players in Game with this ID"})
-    else:
-        await websocket.send_json({"type": "INFO", "payload": "GameSocket connected"})
-        playersSockets[playerid] = websocket 
-        while True:
-            try:
-                #Solo mantiene la conexión, los mensajes van por send_data_to_playerWS 
-                await asyncio.sleep(1)
-                print(playersSockets)
-                pass
-            except WebSocketDisconnect:
-                print("UserDisconnect - Close Connection")
-                break
-            except KeyError:
-                print("User hasnt game")
-
-
-
-#TODO: TEST
-async def send_data_to_playerWS(playerid:int,data: dict):
-    try:
-        await playersSockets[playerid].send_json(data)
-    except WebSocketDisconnect:
-        print("UserDisconnect - Cant send")
-    except KeyError:
-        print("User not connected")

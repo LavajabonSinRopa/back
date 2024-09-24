@@ -9,6 +9,3 @@ class Player:
         self.figure_deck = []  # Cartas figura
         self.movement_deck = [] # Cartas movimiento
         
-        ## ESTO ES MUY TEMPORAL HASTA QUE TENGAMOS BASE DE DATOS
-        from interfaces.websocket_interface import playersSockets 
-        playersSockets[self.unique_id] = None

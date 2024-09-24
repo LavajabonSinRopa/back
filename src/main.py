@@ -11,7 +11,6 @@ app.include_router(game_endpoints.router, prefix="/games")
 
 app.websocket("/games")(websocket_interface.public_games)
 
-app.websocket("/games/{playerid}")(websocket_interface.in_game_connection)
 
 # Levantar el server
 if __name__ == "__main__":
