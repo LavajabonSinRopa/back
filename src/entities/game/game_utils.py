@@ -12,3 +12,10 @@ def print_game(game):
 
 def get_games():
     return games
+
+#temp func until we have BD
+def get_listed_games():
+    game_list = []
+    for game in games:
+        game_list.append({"name": games[game].name, "players": len(games[game].players), "state": games[game].state,"id": games[game].unique_id})
+    return game_list

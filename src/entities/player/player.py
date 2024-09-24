@@ -8,3 +8,4 @@ class Player:
         self.name = name
         self.figure_deck = []  # Cartas figura
         self.movement_deck = [] # Cartas movimiento
+        
