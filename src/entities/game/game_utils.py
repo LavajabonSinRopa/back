@@ -4,7 +4,6 @@ import uuid
 def add_game(game_name, creator_id):
     new_game_id = repo.create_game(unique_id = str(uuid.uuid4()), name = game_name, state = "waiting", creator_id = creator_id)
     #Creator_id is added as player
-    print(creator_id)
     repo.add_player_to_game(player_id=creator_id, game_id=new_game_id)
     return new_game_id
     
@@ -24,3 +23,6 @@ def get_game_by_id(game_id):
 
 def add_to_game(player_id,game_id):
     repo.add_player_to_game(player_id=player_id,game_id=game_id)
+
+def delete_all():
+    repo.tear_down()

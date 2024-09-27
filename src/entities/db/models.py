@@ -1,6 +1,6 @@
 from sqlalchemy import create_engine, Column, String, ForeignKey, Table
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, sessionmaker
+from sqlalchemy.orm import relationship
 from .settings import DATABASE_FILENAME
 
 # Configuración de la base de datos

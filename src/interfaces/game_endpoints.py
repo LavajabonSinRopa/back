@@ -19,6 +19,7 @@ async def create_game(request: CreateGameRequest):
     # Crear player (creador de la partida) y partida
     creator_id = add_player(player_name=request.player_name)
     game_id = add_game(game_name=request.game_name, creator_id=creator_id)
+    #TODO: send only data of games in "waiting"
     await public_manager.broadcast({"type":"Public_Games","payload": get_games()})
     print(f"Public Connections: {public_manager.connections}")
     

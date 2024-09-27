@@ -25,9 +25,6 @@ class gameRepository:
     def create_player(name: str, unique_id: str) -> Player:
         session = Session()
         try:
-            print(name)
-            print(unique_id)
-            print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
             new_player = Player(unique_id=unique_id, name=name)
             session.add(new_player)
             session.commit()

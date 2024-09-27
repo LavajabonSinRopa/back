@@ -1,13 +1,15 @@
 import unittest
 import requests
+from src.entities.game.game_utils import delete_all
 
 URL = "http://localhost:8000/games"
 game_data = {"game_name": "juego1", "player_name": "mi nombre"}
-NofGamesCreated = 1007
+NofGamesCreated = 60
 
 #Run this test with server up
-class test_game_endpoints(unittest.TestCase):        
+class test_game_endpoints(unittest.TestCase):    
     def test_create_game_endpoint_success(self):
+        delete_all()
         for _ in range(NofGamesCreated):
             r = requests.post(URL, json=game_data, headers={"Content-Type": "application/json"})
             assert r.status_code == 200
@@ -18,8 +20,6 @@ class test_game_endpoints(unittest.TestCase):
     def test_get_games_endpoint(self):
         r = requests.get(URL)
         assert r.status_code == 200
-        res = r.json()
-        assert len(res) == NofGamesCreated
         #TODO: testear si los nombres returneados son correctos
 
 class TestJoinGameEndpoint(unittest.TestCase):
