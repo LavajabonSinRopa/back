@@ -1,4 +1,4 @@
 fastapi
 uvicorn
-sqlalchemy<2.0
+sqlalchemy
 websockets
