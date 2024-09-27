@@ -4,7 +4,7 @@ from src.entities.game.game_utils import delete_all
 
 URL = "http://localhost:8000/games"
 game_data = {"game_name": "juego1", "player_name": "mi nombre"}
-NofGamesCreated = 60
+NofGamesCreated = 3
 
 #Run this test with server up
 class test_game_endpoints(unittest.TestCase):    

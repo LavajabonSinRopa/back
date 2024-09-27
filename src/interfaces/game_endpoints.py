@@ -28,16 +28,17 @@ async def create_game(request: CreateGameRequest):
 @router.post("/{game_id}/join", response_model=JoinGameResponse)
 async def join_game(game_id: str, request: JoinGameRequest):
     """Endpoint to join a game."""
-    game = get_game_by_id(game_id)
-    if game is None:
+    try:
+        game = get_game_by_id(game_id)
+    except:
         raise HTTPException(status_code=404, detail="Invalid game ID")
     
     # Crear player, agregarlo al juego
-    player = add_player(player_name=request.player_name)
-    add_to_game(player_id=player.unique_id, game_id=game.unique_id)
+    player_id = add_player(player_name=request.player_name)
+    add_to_game(player_id=player_id, game_id=game_id)
 
     # Devolver ID unico de jugador para la partida
-    return JoinGameResponse(player_id=player.unique_id)
+    return JoinGameResponse(player_id=player_id)
 
 @router.get("")
 def get_all_games():
