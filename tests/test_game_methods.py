@@ -1,8 +1,6 @@
 import unittest
-from src.entities.game.game import Game
+from src.entities.db.models import Game, Player
 from src.entities.game.game_utils import add_game,get_games
-from src.entities.player.player import Player
-
 
 class test_game_utils(unittest.TestCase):
     def test_add_and_get_game(self):
