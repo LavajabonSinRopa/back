@@ -25,7 +25,7 @@ def create_game(request: CreateGameRequest):
     return CreateGameResponse(game_id=game.unique_id, player_id=creator.unique_id)
 
 @router.post("/{game_id}/join", response_model=JoinGameResponse)
-def join_game(game_id: str, request: JoinGameRequest):
+async def join_game(game_id: str, request: JoinGameRequest):
     """Endpoint to join a game."""
     game = get_game_by_id(game_id)
     if game is None:
