@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, HTTPException
 from entities.game.game import Game
-from entities.game.game_utils import add_game, get_games, get_listed_games
+from entities.game.game_utils import add_game, get_games, get_listed_games, get_game_by_id
 from entities.player.player import Player
 from schemas.game_schemas import (CreateGameRequest, CreateGameResponse, 
                                   GameInResponse, JoinGameRequest, JoinGameResponse)
