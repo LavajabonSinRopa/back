@@ -28,4 +28,6 @@ class test_games_Repo(unittest.TestCase):
         #try joining
         repo.add_player_to_game(player_id=player_ids[-1],game_id=game_ids[0])
         assert player_ids[-1] in repo.get_game(game_id=game_ids[0])['players']
-        
+
+if __name__ == "__main__":
+    unittest.main()
