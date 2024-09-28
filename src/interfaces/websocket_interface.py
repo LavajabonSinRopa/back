@@ -1,5 +1,5 @@
 from fastapi import WebSocket, WebSocketDisconnect
-from entities.game.game_utils import get_listed_games
+from entities.game.game_utils import get_games
 
 class ConnectionManager:
     def __init__(self):
@@ -33,7 +33,7 @@ async def public_games(websocket: WebSocket):
     await public_manager.connect(websocket)
     print(public_manager.connections)
     try:
-        games = get_listed_games()
+        games = get_games()
         games_listWS = {"type": "CreatedGames","payload": games} 
         await public_manager.send_personal_message(games_listWS, websocket)
     except WebSocketDisconnect:
