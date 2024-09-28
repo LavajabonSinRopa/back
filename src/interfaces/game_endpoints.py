@@ -1,11 +1,14 @@
 # back/interfaces/game_endpoints.py
 
-from fastapi import APIRouter, HTTPException
-from entities.game.game_utils import add_game, get_games, get_game_by_id, add_to_game
+from fastapi import APIRouter, HTTPException, Response
+from entities.game.game_utils import (add_game, get_games, get_game_by_id, 
+                                      add_to_game, remove_player_from_game)
 from entities.player.player_utils import add_player
 from schemas.game_schemas import (CreateGameRequest, CreateGameResponse, 
-                                  GameInResponse, JoinGameRequest, JoinGameResponse)
+                                  GameInResponse, JoinGameRequest, JoinGameResponse,
+                                  LeaveGameRequest)
 from interfaces.websocket_interface import public_manager
+from sqlalchemy.exc import NoResultFound
 
 router = APIRouter()
 
@@ -39,6 +42,23 @@ async def join_game(game_id: str, request: JoinGameRequest):
 
     # Devolver ID unico de jugador para la partida
     return JoinGameResponse(player_id=player_id)
+
+@router.post("/{game_id}/leave")
+async def join_game(game_id: str, request: LeaveGameRequest):
+    """Endpoint to join a game."""
+    try:
+        game = get_game_by_id(game_id)
+    except:
+        raise HTTPException(status_code=404, detail="Invalid game ID")
+    
+    # Eliminar jugador
+    try:
+        remove_player_from_game(game_id=game_id, player_id=request.player_id)
+    except NoResultFound:
+        raise HTTPException(status_code=404, detail="Player does not exist in the game")
+
+    # Devolver 200 OK sin data extra
+    return Response(status_code=200)
 
 @router.get("")
 def get_all_games():
