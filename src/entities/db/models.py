@@ -18,11 +18,6 @@ class Player(Base):
     unique_id = Column(String, primary_key=True)
     name = Column(String, nullable=False)
     games = relationship('Game', secondary=game_player_association, back_populates='players')
-<<<<<<< HEAD
-    
-    # Access all cards that a player has
-=======
->>>>>>> af7c8aa (starting with cards)
     figure_cards = relationship('Figure_card', back_populates='player', cascade="all, delete-orphan")
     movement_cards = relationship('Movement_card', back_populates='player', cascade="all, delete-orphan")
 
@@ -37,7 +32,6 @@ class Game(Base):
 
 class Figure_card(Base):
     __tablename__ = 'Figure_cards'
-<<<<<<< HEAD
     unique_id = Column(String, primary_key=True)  # Ensure a primary key exists
     card_type = Column(Integer)
     state = Column(String, nullable=False)  # 'Drawn', 'Not drawn', 'Blocked'
@@ -56,21 +50,6 @@ class Movement_card(Base):
 
     player = relationship('Player', back_populates='movement_cards')
     game = relationship('Game')
-
-#NEED A FUNCTION TO CREATE CARDS
-=======
-    card_type = Column(Integer)
-    # 'Drawn' 'Not drawn' 'Blocked'
-    state = Column(String, nullable=False)
-    player = relationship('Player', back_populates='figure_cards')
-    pass
-
-class Movement_card(Base):
-    __tablename__ = 'Movement_cards'
-    card_type = Column(Integer)
-    player = relationship('Player', back_populates='Movement_cards')
-    pass
->>>>>>> af7c8aa (starting with cards)
 
 # Crea las tablas en la base de datos
 Base.metadata.create_all(engine)
