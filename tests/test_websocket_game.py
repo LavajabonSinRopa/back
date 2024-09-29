@@ -94,6 +94,62 @@ class Test(unittest.TestCase):
             message_dict = json.loads(message) 
             self.assertEqual(message_dict, broadcast_message)
 
+    def test3_websocket_broadcast(self):
+        # Agregar player nuevo
+        URL = f"http://localhost:8000/games/{self.game_id}/join"
+        player_data = {"player_name": "El Cuarto"}
+        r = requests.post(URL, json=player_data, headers={"Content-Type": "application/json"})
+        player4_id = r.json().get("player_id")
+
+        # WS para el player nuevo
+        self.websocket_urls.append(f"ws://localhost:8000/games/{self.game_id}/{player4_id}")
+        
+        # Conectarse a su websocket
+        self.loop.run_until_complete(self.connect_websockets())
+
+        # Player nuevo abandona
+        URL = f"http://localhost:8000/games/{self.game_id}/leave"
+        leave_data = {"player_id": player4_id}
+        r = requests.post(URL, json=leave_data, headers={"Content-Type": "application/json"})
+
+        # Mensaje de PlayerLeft experado
+        broadcast_message = {"type": "PlayerLeft", "payload": player4_id}
+        
+        # Esperar el expected message hasta potencial timeout
+        # TODO: refactorear toda la clase para usar esta version de receive_message, pasar broadcast_message x param
+        async def receive_message(websocket):
+            try:
+                while True:
+                    try:
+                        message = await asyncio.wait_for(websocket.recv(), timeout=1)  # Esperar 1 seg
+                        message_dict = json.loads(message)
+                        print(f"Received message: {message_dict}")
+                        if message_dict == broadcast_message: 
+                            return True # Devolver True si se recibe el mensaje esperado
+                    except asyncio.TimeoutError:
+                        print("Timeout waiting for message...") 
+                        break  
+                    except Exception as e:
+                        print(f"Error receiving message: {e}")
+                        return False
+            except Exception as e:
+                print(f"Error in receive_message: {e}")
+                return False
+
+        print("--Broadcast receive--")
+        received_any = False
+        for websocket in self.websockets:
+            if websocket.open:
+                # Devuelve True cuando llega el mensaje esperado
+                received = self.loop.run_until_complete(receive_message(websocket))
+                if received:
+                    received_any = True
+                    break
+            else:
+                print(f"WebSocket {websocket} cerrado!")
+
+        self.assertTrue(received_any, f"No llegó el mensaje esperado: {broadcast_message}")
+
 
 if __name__ == "__main__":
     unittest.main()
