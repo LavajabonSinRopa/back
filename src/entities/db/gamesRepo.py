@@ -1,7 +1,8 @@
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import NoResultFound
-from .models import Game, Player, engine
+from .models import Game, Player, engine, Figure_card, Movement_card
 from typing import List
+import uuid
 
 # Create a session
 Session = sessionmaker(bind=engine)
@@ -53,6 +54,25 @@ class gameRepository:
         finally:
             session.close()
 
+    @staticmethod
+    def get_player(player_id: str) -> dict:
+        session = Session()
+        try:
+            player = session.query(Player).filter_by(unique_id=player_id).one()
+            print('PLAYER FOUND')
+            print(player)
+            return {
+                "unique_id": player.unique_id,
+                "name": player.name,
+                "figure_cards": [{'type':fcard.card_type,'state':fcard.state} for fcard in player.figure_cards],
+                "movement_cards": [mcard.card_type for mcard in player.movement_cards]
+            }
+        except NoResultFound:
+            raise ValueError("Game_model does not exist")
+        finally:
+            session.close()
+
+    
     @staticmethod
     def get_games() -> List[dict]:
         session = Session()
@@ -109,5 +129,47 @@ class gameRepository:
             raise e
         finally:
             session.close()
+    
+    @staticmethod
+    def create_card(card_type, card_kind, player_id, game_id, state=None):
+        """
+        Creates a card of a specific type and assigns it to a player.
+
+        :param card_type: The type of the card (Integer).
+        :param card_kind: 'figure' for Figure_card or 'movement' for Movement_card.
+        :param player_id: The unique ID of the player.
+        :param game_id: The unique ID of the game.
+        :param state: The state of the card (only applicable for Figure_card).
+        """
+        # Start a new session
+        session = Session()
+        try:
+            
+            player = session.query(Player).filter_by(unique_id=player_id).one_or_none()
+            if player is None:
+                raise ValueError(f"No player found with ID: {player_id}")
+            
+            # Instantiate the card based on the specified class
+            if card_kind == 'figure':
+                card = Figure_card(unique_id=str(uuid.uuid4()), card_type=card_type, state=state, player_id=player_id, game_id=game_id)
+                player.figure_cards.append(card)
+            elif card_kind == 'movement':
+                card = Movement_card(unique_id=str(uuid.uuid4()), card_type=card_type, player_id=player_id, game_id=game_id)
+                player.movement_cards.append(card)
+            else:
+                raise ValueError("Invalid card class specified.")
+            
+
+            session.commit()
+
+        except Exception as e:
+            session.rollback()
+            print(f"Error creating card: {e}")
+
+        finally:
+            session.close()
+
+# Example usage:
+# create_card(card_type=1, card_kind='figure', player_id='player123', game_id='game456', state='Drawn')
 
 repo = gameRepository()
