@@ -62,13 +62,16 @@ class GameSocketManager:
                 except Exception as e:
                     print(f"Error sending message to player {player}: {e}")
              
-    async def send_to_user(self, game_id: str, player_id: str, message: dict):
-        if self.sockets_map[game_id][player_id] is not None:
-            try:
-                await self.sockets_map[game_id][player_id].send_json(message)
-            except Exception as e:
-                print(f"Error sending message to player {player_id}: {e}")
-            
+    async def send_to_user(self, game_id, player_id, message):
+        if game_id in self.sockets_map and player_id in self.sockets_map[game_id]:
+            websocket = self.sockets_map[game_id][player_id]
+            if websocket is not None and websocket.client_state is WebSocketState.CONNECTED:
+                await websocket.send_json(message)
+            else:
+                print(f"WebSocket for player {player_id} in game {game_id} is not connected.")
+        else:
+            print(f"Game ID {game_id} or Player ID {player_id} not found in sockets_map.")
+      
     async def user_connect(self, game_id: str, player_id: str, websocket: WebSocket):
         try:
             await websocket.accept()
