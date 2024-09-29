@@ -5,6 +5,7 @@ import websockets
 import sys
 import os
 import json
+from src.entities.game.game_utils import get_game_by_id
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 
@@ -71,7 +72,7 @@ class Test(unittest.TestCase):
             message = self.loop.run_until_complete(receive_message(websocket))
             print(f"Received message: {message}")
             message_dict = json.loads(message) 
-            self.assertEqual(message_dict, {"type":"SUCCESS","payload":"GameWS connected"})
+            self.assertEqual(message_dict, {"type":"SUCCESS","payload":get_game_by_id(self.game_id)["players"]})
 
     def test2_websocket_broadcast(self):
         # Probar broadcast por nuevo jugador
