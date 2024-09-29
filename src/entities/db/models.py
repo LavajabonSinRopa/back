@@ -1,9 +1,9 @@
-from sqlalchemy import create_engine, Column, String, ForeignKey, Table
+from sqlalchemy import create_engine, Column, String, ForeignKey, Table, Integer
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from .settings import DATABASE_FILENAME
 
-# Configuración de la base de datos
+# DB config
 engine = create_engine(f'sqlite:///{DATABASE_FILENAME}', echo=True)
 Base = declarative_base()
 
@@ -18,6 +18,8 @@ class Player(Base):
     unique_id = Column(String, primary_key=True)
     name = Column(String, nullable=False)
     games = relationship('Game', secondary=game_player_association, back_populates='players')
+    figure_cards = relationship('Figure_card', back_populates='player', cascade="all, delete-orphan")
+    movement_cards = relationship('Movement_card', back_populates='player', cascade="all, delete-orphan")
 
 class Game(Base):
     __tablename__ = 'Games'
@@ -27,6 +29,20 @@ class Game(Base):
     board = Column(String)
     creator = Column(String, ForeignKey('Players.unique_id'))
     players = relationship('Player', secondary=game_player_association, back_populates='games')
+
+class Figure_card(Base):
+    __tablename__ = 'Figure_cards'
+    card_type = Column(Integer)
+    # 'Drawn' 'Not drawn' 'Blocked'
+    state = Column(String, nullable=False)
+    player = relationship('Player', back_populates='figure_cards')
+    pass
+
+class Movement_card(Base):
+    __tablename__ = 'Movement_cards'
+    card_type = Column(Integer)
+    player = relationship('Player', back_populates='Movement_cards')
+    pass
 
 # Crea las tablas en la base de datos
 Base.metadata.create_all(engine)
