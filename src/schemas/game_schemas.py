@@ -24,3 +24,7 @@ class JoinGameResponse(BaseModel):
 class GameInResponse(BaseModel):
     game_id: str
     game_name: str
+
+# POST a games/<game_id>/leave
+class LeaveGameRequest(BaseModel):
+    player_id: str

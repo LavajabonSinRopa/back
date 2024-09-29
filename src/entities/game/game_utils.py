@@ -1,4 +1,5 @@
 from ..db.gamesRepo import repo
+from sqlalchemy.exc import NoResultFound
 import uuid
 
 def add_game(game_name, creator_id):
@@ -23,6 +24,12 @@ def get_game_by_id(game_id):
 
 def add_to_game(player_id,game_id):
     repo.add_player_to_game(player_id=player_id,game_id=game_id)
+
+def remove_player_from_game(player_id, game_id):
+    try:
+        repo.remove_player_from_game(player_id=player_id, game_id=game_id)
+    except Exception as e:
+        raise e
 
 def delete_all():
     repo.tear_down()

@@ -172,4 +172,26 @@ class gameRepository:
 # Example usage:
 # create_card(card_type=1, card_kind='figure', player_id='player123', game_id='game456', state='Drawn')
 
+    @staticmethod
+    def remove_player_from_game(player_id: str, game_id: str):
+        session = Session()
+        try:
+            # Retrieve the player and game
+            player = session.query(Player).filter_by(unique_id=player_id).one()
+            game = session.query(Game).filter_by(unique_id=game_id).one()
+            
+            # Remove the player from the game
+            if player in game.players:
+                game.players.remove(player)
+                session.commit()
+            else:
+                print(f"Player {player_id} is not in game {game_id}.")
+
+            print(f"ALL PLAYERS IN ID {game_id} are {[player.name for player in game.players]}") # TO BE REMOVED
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            session.close()
+
 repo = gameRepository()
