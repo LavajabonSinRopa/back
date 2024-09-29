@@ -47,6 +47,63 @@ class TestJoinGameEndpoint(unittest.TestCase):
         self.assertEqual(r.status_code, 404)
 
 
+class TestLeaveGameEndpoint(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        # Crear un juego y joinear un jugador
+        game_data = {"game_name": "test_leave_game", "player_name": "player_1"}
+        r = requests.post(URL, json=game_data, headers={"Content-Type": "application/json"})
+        assert r.status_code == 200
+        cls.game_id = r.json().get("game_id")  # Guardar game_id para otros tests
+        cls.creator_player_id = r.json().get("player_id")  # Guardar player_id del creador
+
+        # Join con otro jugador (Player_2)
+        URL_JOIN = f"http://localhost:8000/games/{cls.game_id}/join"
+        player_data = {"player_name": "player_2"}
+        r = requests.post(URL_JOIN, json=player_data, headers={"Content-Type": "application/json"})
+        cls.player_2_id = r.json().get("player_id")  # Guardar player_id del segundo jugador
+        assert r.status_code == 200
+
+    def test_leave_game_success(self):
+        # Ver que el segundo jugador puede abandonar el juego
+        URL_LEAVE = f"http://localhost:8000/games/{self.game_id}/leave"
+        leave_data = {"player_id": self.player_2_id}
+        r = requests.post(URL_LEAVE, json=leave_data, headers={"Content-Type": "application/json"})
+        self.assertEqual(r.status_code, 200)  # Debería devolver 200 OK
+
+        # Ver que el jugador ya no está en el juego
+        URL_GAMES = "http://localhost:8000/games/"
+        r = requests.get(URL_GAMES)
+        game_data = r.json()
+
+        # La lista de jugadores no debe contener el player_2_id
+        players_in_game = [game['players'] for game in game_data]
+        print(players_in_game)
+        self.assertNotIn(self.player_2_id, players_in_game)  # El jugador debe haber sido removido
+
+    def test_leave_game_invalid_player_id(self):
+        # Intentar dejar el juego con un ID de jugador inválido
+        URL_LEAVE = f"http://localhost:8000/games/{self.game_id}/leave"
+        leave_data = {"player_id": "invalid_player_id"}
+        r = requests.post(URL_LEAVE, json=leave_data, headers={"Content-Type": "application/json"})
+        self.assertEqual(r.status_code, 404)  # Deberia devolver 404 Not Found
+
+    def test_leave_game_creator(self):
+        # Ver que el creador del juego no puede dejar el juego
+        URL_LEAVE = f"http://localhost:8000/games/{self.game_id}/leave"
+        leave_data = {"player_id": self.creator_player_id}
+        r = requests.post(URL_LEAVE, json=leave_data, headers={"Content-Type": "application/json"})
+        self.assertEqual(r.status_code, 403)  # Debería devolver 403 forbidden
+
+        # Conseguir IDs de jugadores en la partida
+        URL_GAMES = "http://localhost:8000/games/"
+        r = requests.get(URL_GAMES)
+        game_data = r.json()
+        players_in_game = [game['players'] for game in game_data if game["unique_id"] == self.game_id]
+
+        # Flattenear la lista para que assertIn no compare las sublistas de players_in_game con el ID
+        players_in_game_flat = [item for sublist in players_in_game for item in sublist]
+        self.assertIn(self.creator_player_id, players_in_game_flat) # Verificar que el creador sigue en la partida
 
 if __name__ == "__main__":
     unittest.main()

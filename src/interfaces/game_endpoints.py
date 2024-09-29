@@ -51,18 +51,26 @@ async def join_game(game_id: str, request: JoinGameRequest):
     return JoinGameResponse(player_id=player_id)
 
 @router.post("/{game_id}/leave")
-async def join_game(game_id: str, request: LeaveGameRequest):
+async def leave_game(game_id: str, request: LeaveGameRequest):
     """Endpoint to join a game."""
     try:
         game = get_game_by_id(game_id)
     except:
         raise HTTPException(status_code=404, detail="Invalid game ID")
     
+    # Verificar si el jugador es el creador del juego
+    print("GAME CREATOR IS ", game["creator"])
+    if game["creator"] == request.player_id:
+        raise HTTPException(status_code=403, detail="El creador del juego no puede abandonar la partida")
+    
     # Eliminar jugador
     try:
         remove_player_from_game(game_id=game_id, player_id=request.player_id)
     except NoResultFound:
         raise HTTPException(status_code=404, detail="Player does not exist in the game")
+    
+    # Avisar a los sockets de la partida sobre el jugador que abandona.
+    await game_socket_manager.broadcast_game(game_id,{"type":"PlayerLeft","payload": request.player_id})
 
     # Devolver 200 OK sin data extra
     return Response(status_code=200)
