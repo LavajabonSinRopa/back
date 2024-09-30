@@ -7,19 +7,19 @@ import uuid
 class test_player_utils(unittest.TestCase):
     def test1_take_move_card(self):
 
-        pid,gid = str(uuid.uuid4()),str(uuid.uuid4())
-        repo.create_player(name="MESSI",unique_id=pid)
-        repo.create_game(unique_id=gid,name = "FINALDELMUNDIAL",state="waiting",creator_id=pid)
+        pid = add_player(player_name="MESSI")
+        gid = add_game(game_name="FINALDELMUNDIAL",creator_id=pid)
         
-        mov_card_info = take_move_card(pid,gid)
+        mov_card_info = take_move_card(player_id=pid,game_id=gid)
+        
         print("\n --MV-CARD-INFO-- \n")
         print( f"{mov_card_info}\n")
         
         player = repo.get_player(pid)
         self.assertEqual(len(player["movement_cards"]),1)
         
-        mov_card_info = take_move_card(pid,gid)
-        mov_card_info = take_move_card(pid,gid)
+        mov_card_info = take_move_card(player_id=pid,game_id=gid)
+        mov_card_info = take_move_card(player_id=pid,game_id=gid)
         player = repo.get_player(pid)
         self.assertEqual(len(player["movement_cards"]),3)
         
@@ -32,7 +32,7 @@ class test_player_utils(unittest.TestCase):
         repo.create_game(unique_id=gid,name = "FINALDELMUNDIAL",state="waiting",creator_id=pid)
         
         
-        fg_cards_info = take_figures_card(pid,gid)
+        fg_cards_info = take_figures_card(player_id=pid,game_id=gid)
         print("\n --FG-CARD-INFO-- \n")
         print( f"{fg_cards_info}\n")
         

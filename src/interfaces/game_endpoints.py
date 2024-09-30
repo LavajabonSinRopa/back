@@ -3,7 +3,7 @@
 from fastapi import APIRouter, HTTPException, Response
 from entities.game.game_utils import (add_game, get_games, get_game_by_id, 
                                       add_to_game, remove_player_from_game, pass_turn,
-                                      start_game_by_id,get_players_status)
+                                      start_game_by_id,get_players_status,get_games_with_player_names)
 from entities.player.player_utils import add_player
 from schemas.game_schemas import (CreateGameRequest, CreateGameResponse, 
                                   SkipTurnRequest, JoinGameRequest, JoinGameResponse,
@@ -28,7 +28,7 @@ async def create_game(request: CreateGameRequest):
     game_socket_manager.join_player_to_game_map(game_id,creator_id)
     
     #TODO: send only data of games in "waiting"
-    await public_manager.broadcast({"type":"CreatedGames","payload": get_games()})
+    await public_manager.broadcast({"type":"CreatedGames","payload": get_games_with_player_names()})
     
     return CreateGameResponse(game_id=game_id, player_id=creator_id)
 

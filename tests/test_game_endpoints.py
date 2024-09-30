@@ -31,6 +31,7 @@ class TestJoinGameEndpoint(unittest.TestCase):
         r = requests.post(URL, json=game_data, headers={"Content-Type": "application/json"})
         assert r.status_code == 200  # (cls.assertEqual da error)
         cls.game_id = r.json().get("game_id")  # Guardar game_id para otros tests
+        cls.creator_id = r.json().get("player_id")  # Guardar game_id para otros tests
 
     def test1_join_game_success(self):
         # Joinear juego ya creado
