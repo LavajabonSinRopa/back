@@ -59,7 +59,6 @@ async def leave_game(game_id: str, request: LeaveGameRequest):
         raise HTTPException(status_code=404, detail="Invalid game ID")
     
     # Verificar si el jugador es el creador del juego
-    print("GAME CREATOR IS ", game["creator"])
     if game["creator"] == request.player_id:
         raise HTTPException(status_code=403, detail="El creador del juego no puede abandonar la partida")
     
@@ -96,3 +95,13 @@ def get_all_games():
     """Endpoint to request all games"""
     games = get_games()
     return games
+
+@router.get("/{game_id}")
+async def leave_game(game_id: str):
+    """Get data for a specific game."""
+    try:
+        game = get_game_by_id(game_id)
+    except:
+        raise HTTPException(status_code=404, detail="Invalid game ID")
+    
+    return game

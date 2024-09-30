@@ -142,5 +142,33 @@ class TestSkipTurnGameEndpoint(unittest.TestCase):
         r = requests.post(URL_SKIP, json=leave_data, headers={"Content-Type": "application/json"})
         assert r.status_code >= 400
 
+class TestGetGameEndpoint(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.URL_GAMES = "http://localhost:8000/games"
+        cls.valid_game_data = {"game_name": "test_game", "player_name": "player_1"}
+
+        # Crear juego
+        r = requests.post(cls.URL_GAMES, json=cls.valid_game_data, headers={"Content-Type": "application/json"})
+        assert r.status_code == 200
+        cls.game_id = r.json().get("game_id")  # Guardar game_id
+
+    def test_GET_GAME_SUCCESS(self):
+        # Obtener datos del juego
+        URL = f"{self.URL_GAMES}/{self.game_id}"
+        r = requests.get(URL)
+        self.assertEqual(r.status_code, 200)
+        game_data = r.json()
+        print(game_data)
+        print(self.valid_game_data)
+        self.assertEqual(game_data['name'], self.valid_game_data['game_name'])  # Verificar nombre
+
+    def test_GET_GAME_INVALID_ID(self):
+        # Obtener datos del juego con ID invalido
+        URL = f"{self.URL_GAMES}/invalid_game_id"
+        r = requests.get(URL)
+        self.assertEqual(r.status_code, 404)  # Debería devolver 404
+        self.assertIn("Invalid game ID", r.text)  # Verificar mensaje de error
+
 if __name__ == "__main__":
     unittest.main()
