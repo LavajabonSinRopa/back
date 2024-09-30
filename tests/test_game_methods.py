@@ -26,7 +26,7 @@ class test_game_utils(unittest.TestCase):
         for turns in range(NofGames):
             assert get_game_by_id(game_id=game_id)['turn'] == turns
             pass_turn(game_id=game_id, player_id=turn_order[turns%2])
-        for _ in range(NofGames/2):
+        for _ in range(NofGames):
             pass_turn(game_id=game_id, player_id=darth_id)
         assert get_game_by_id(game_id=game_id)['turn'] <= NofGames+1
 

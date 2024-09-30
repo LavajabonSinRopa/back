@@ -5,10 +5,10 @@ import websockets
 import sys
 import os
 import json
-from src.entities.game.game_utils import get_players_names
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 
+from entities.game.game_utils import get_players_names
 from interfaces.SocketManagers import game_socket_manager
 
 class Test(unittest.TestCase):
