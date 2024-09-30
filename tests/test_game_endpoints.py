@@ -32,7 +32,7 @@ class TestJoinGameEndpoint(unittest.TestCase):
         assert r.status_code == 200  # (cls.assertEqual da error)
         cls.game_id = r.json().get("game_id")  # Guardar game_id para otros tests
         cls.creator_id = r.json().get("player_id")  # Guardar game_id para otros tests
-
+        
     def test1_join_game_success(self):
         # Joinear juego ya creado
         URL = "http://localhost:8000/games/{game_id}/join".format(game_id=self.game_id)
@@ -57,6 +57,32 @@ class TestJoinGameEndpoint(unittest.TestCase):
         player_data = {"player_name": "otro nombre"}
         r = requests.post(URL, json=player_data, headers={"Content-Type": "application/json"})
         self.assertEqual(r.status_code, 403)
+
+    def test4_join_full_game(self):
+        URL = "http://localhost:8000/games"
+        game_data = {"game_name": "juego2", "player_name": "mi nombre"}
+        r = requests.post(URL, json=game_data, headers={"Content-Type": "application/json"})
+        assert r.status_code == 200  # (cls.assertEqual da error)
+        game_id = r.json().get("game_id")
+
+        # Ver cantidad de jugadores 
+        URL_GAME = f"http://localhost:8000/games/{game_id}"
+        r = requests.get(URL_GAME, headers={"Content-Type": "application/json"})
+        # Calcular cantidad de jugafores que faltan para llenar la partida
+        players_left = 4 - len(r.json().get("players")) 
+
+
+        for i in range(1, players_left+10):
+            # Agregar jugador nuevo
+            URL = f"http://localhost:8000/games/{game_id}/join"
+            player_data = {"player_name": f"otro nombre {i}"}
+            r = requests.post(URL, json=player_data, headers={"Content-Type": "application/json"})
+
+            # Si la sala está llena, el request debe devolver 403 forbidden
+            if i >= players_left+1:
+               self.assertEqual(r.status_code, 403)
+            else:
+               self.assertEqual(r.status_code, 200)
 
 
 class TestLeaveGameEndpoint(unittest.TestCase):
@@ -90,7 +116,6 @@ class TestLeaveGameEndpoint(unittest.TestCase):
 
         # La lista de jugadores no debe contener el player_2_id
         players_in_game = [game['players'] for game in game_data]
-        print(players_in_game)
         self.assertNotIn(self.player_2_id, players_in_game)  # El jugador debe haber sido removido
 
     def test_leave_game_invalid_player_id(self):
@@ -171,8 +196,6 @@ class TestGetGameEndpoint(unittest.TestCase):
         r = requests.get(URL)
         self.assertEqual(r.status_code, 200)
         game_data = r.json()
-        print(game_data)
-        print(self.valid_game_data)
         self.assertEqual(game_data['name'], self.valid_game_data['game_name'])  # Verificar nombre
 
     def test_GET_GAME_INVALID_ID(self):
