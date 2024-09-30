@@ -162,7 +162,7 @@ class gameRepository:
 
             session.commit()
             return({"card_id" : card.unique_id,
-                    "kind_card":card_kind,
+                    "card_kind":card_kind,
                     "card_type":card_type,
                     "state":state})
 
