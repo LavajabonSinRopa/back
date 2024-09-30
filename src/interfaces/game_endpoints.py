@@ -2,7 +2,8 @@
 
 from fastapi import APIRouter, HTTPException, Response
 from entities.game.game_utils import (add_game, get_games, get_game_by_id, 
-                                      add_to_game, remove_player_from_game, pass_turn)
+                                      add_to_game, remove_player_from_game, pass_turn,
+                                      start_game_by_id,get_players_status)
 from entities.player.player_utils import add_player
 from schemas.game_schemas import (CreateGameRequest, CreateGameResponse, 
                                   SkipTurnRequest, JoinGameRequest, JoinGameResponse,
@@ -39,6 +40,9 @@ async def join_game(game_id: str, request: JoinGameRequest):
     except:
         raise HTTPException(status_code=404, detail="Invalid game ID")
     
+    if game["state"] != "waiting":
+        raise HTTPException(status_code=403, detail="La partida no está en estado de espera")
+
     # Crear player, agregarlo al juego
     player_id = add_player(player_name=request.player_name)
     add_to_game(player_id=player_id, game_id=game_id)
@@ -105,3 +109,25 @@ async def leave_game(game_id: str):
         raise HTTPException(status_code=404, detail="Invalid game ID")
     
     return game
+
+@router.post("/{game_id}/start")
+async def start_game(game_id: str, request: LeaveGameRequest):
+    """Endpoint to start a game."""
+    try:
+        game = get_game_by_id(game_id)
+    except:
+        raise HTTPException(status_code=404, detail="Invalid game ID")
+    
+    # Verificar si el jugador es el creador del juego
+    print("GAME CREATOR IS ", game["creator"])
+    if game["creator"] != request.player_id:
+        raise HTTPException(status_code=403, detail="Solo el creador puede iniciar la partida")
+    
+    # Iniciar Partida
+    start_game_by_id(game_id)
+    
+    # Avisar a los sockets de la partida sobre el comienzo de la partida.
+    await game_socket_manager.broadcast_game(game_id,{"type":"GameStarted","payload": get_players_status(game_id)})
+
+    # Devolver 200 OK sin data extra
+    return Response(status_code=200)

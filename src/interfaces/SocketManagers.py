@@ -80,9 +80,9 @@ class GameSocketManager:
             print(f"Error accepting connection for player {player_id}: {e}")
 
     async def user_disconnect(self,game_id,player_id):
-        if self.sockets_map[game_id][player_id].client_state is WebSocketState.CONNECTED:
+        if self.sockets_map[game_id][player_id] != None and self.sockets_map[game_id][player_id].client_state is WebSocketState.CONNECTED:
             await self.sockets_map[game_id][player_id].close()
-        self.sockets_map[game_id][player_id] = None
+            self.sockets_map[game_id][player_id] = None
         
         
     async def clean_game(self, game_id):
