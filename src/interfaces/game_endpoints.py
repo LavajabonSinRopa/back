@@ -2,10 +2,10 @@
 
 from fastapi import APIRouter, HTTPException, Response
 from entities.game.game_utils import (add_game, get_games, get_game_by_id, 
-                                      add_to_game, remove_player_from_game)
+                                      add_to_game, remove_player_from_game, pass_turn)
 from entities.player.player_utils import add_player
 from schemas.game_schemas import (CreateGameRequest, CreateGameResponse, 
-                                  GameInResponse, JoinGameRequest, JoinGameResponse,
+                                  SkipTurnRequest, JoinGameRequest, JoinGameResponse,
                                   LeaveGameRequest)
 from interfaces.SocketManagers import public_manager, game_socket_manager 
 from sqlalchemy.exc import NoResultFound
@@ -75,6 +75,22 @@ async def leave_game(game_id: str, request: LeaveGameRequest):
     # Devolver 200 OK sin data extra
     return Response(status_code=200)
 
+@router.post("/{game_id}/skip")
+async def skip_turn(game_id: str, request: SkipTurnRequest):
+    """Endpoint to join a game."""
+    try:
+        skipped = pass_turn(game_id=game_id,player_id=request.player_id)
+    except:
+        raise HTTPException(status_code=404, detail="Invalid game ID")
+
+    if(skipped):
+        # Devolver 200 OK sin data extra
+        return Response(status_code=200)
+    
+    #Si no pudo saltear
+    else:
+        raise HTTPException(status_code=418, detail="Not your turn")
+    
 @router.get("")
 def get_all_games():
     """Endpoint to request all games"""

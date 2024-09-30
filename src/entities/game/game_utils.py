@@ -39,3 +39,27 @@ def get_players_names(game_id):
     for player_id in get_game_by_id(game_id)["players"]:
         list_names.append(repo.get_player(player_id)["name"])
     return list_names
+
+def pass_turn(game_id, player_id):
+    """
+    passes turn if it is player_id's turn and broadcasts to players in game if successful 
+    Args: 
+        game_id (str): The unique ID of the game.
+        player_id(str): The unique ID of the player
+    
+    Returns:
+        bool: true if the turn could be passed, false otherwise
+    """
+    try:
+        game = get_game_by_id(game_id=game_id)
+    except Exception as e:
+        raise e
+    
+    if(player_id not in game['players']):
+        return False
+    
+    if(game['players'][game['turn']%len(game['players'])]!=player_id):
+        return False
+    
+    repo.pass_turn(game_id=game_id)
+    return True

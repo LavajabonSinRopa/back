@@ -9,6 +9,7 @@ class test_games_Repo(unittest.TestCase):
     def test_tear_down(self):
         repo.tear_down()
         assert len(repo.get_games()) == 0
+    
     def test_create_get_join(self):
         repo.tear_down()
         player_ids = []
@@ -28,6 +29,7 @@ class test_games_Repo(unittest.TestCase):
         #try joining
         repo.add_player_to_game(player_id=player_ids[-1],game_id=game_ids[0])
         assert player_ids[-1] in repo.get_game(game_id=game_ids[0])['players']
+    
     def test_create_card(self):
         pid,gid = str(uuid.uuid4()),str(uuid.uuid4())
         repo.create_player(name="MESSI",unique_id=pid)
@@ -40,7 +42,19 @@ class test_games_Repo(unittest.TestCase):
         assert player['movement_cards'][0] == 4
         assert player['figure_cards'][0]['state'] == 'Not Drawn'
         assert player['figure_cards'][0]['type'] == 2
-        
+    
+    def test_pass_turn(self):
+        pid = str(uuid.uuid4())
+        gid = str(uuid.uuid4())
+        repo.create_player(name="MESSI",unique_id=pid)
+        repo.create_game(unique_id=gid,name = "FUNALDELMUNDIAL",state="started",creator_id=pid)
+        repo.add_player_to_game(player_id=pid,game_id=gid)
+        game = repo.get_game(game_id=gid)
+        assert game['turn'] == 0
+        for _ in range(70):
+            repo.pass_turn(game_id = gid)
+        game = repo.get_game(game_id=gid)
+        assert game['turn'] == 70
 
 if __name__ == "__main__":
     unittest.main()

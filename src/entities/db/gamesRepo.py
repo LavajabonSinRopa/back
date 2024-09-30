@@ -12,7 +12,7 @@ class gameRepository:
     def create_game(unique_id: str,name: str, state: str, creator_id: str) -> Game:
         session = Session()
         try:
-            new_game = Game(unique_id = unique_id, name=name, state=state, creator=creator_id)
+            new_game = Game(unique_id = unique_id, name=name, state=state, creator=creator_id, turn=0)
             session.add(new_game)
             session.commit()
             return new_game.unique_id
@@ -46,6 +46,7 @@ class gameRepository:
                 "name": game.name,
                 "state": game.state,
                 "board": game.board,
+                "turn": game.turn,
                 "creator": game.creator,
                 "players": [player.unique_id for player in game.players]
             }
@@ -84,6 +85,7 @@ class gameRepository:
                     "name": game.name,
                     "state": game.state,
                     "board": game.board,
+                    "turn": game.turn,
                     "creator": game.creator,
                     "players": [player.unique_id for player in game.players]
                 }
@@ -192,6 +194,19 @@ class gameRepository:
                 print(f"Player {player_id} is not in game {game_id}.")
 
             print(f"ALL PLAYERS IN ID {game_id} are {[player.name for player in game.players]}") # TO BE REMOVED
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            session.close()
+
+    @staticmethod
+    def pass_turn(game_id: str):
+        session = Session()
+        try :
+            game = session.query(Game).filter_by(unique_id=game_id).one()
+            game.turn += 1
+            session.commit()
         except Exception as e:
             session.rollback()
             raise e
