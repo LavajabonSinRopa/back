@@ -105,5 +105,42 @@ class TestLeaveGameEndpoint(unittest.TestCase):
         players_in_game_flat = [item for sublist in players_in_game for item in sublist]
         self.assertIn(self.creator_player_id, players_in_game_flat) # Verificar que el creador sigue en la partida
 
+class TestSkipTurnGameEndpoint(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        # Crear un juego y joinear un jugador
+        game_data = {"game_name": "test_leave_game", "player_name": "player_1"}
+        r = requests.post(URL, json=game_data, headers={"Content-Type": "application/json"})
+        assert r.status_code == 200
+        cls.game_id = r.json().get("game_id")  # Guardar game_id para otros tests
+        cls.creator_player_id = r.json().get("player_id")  # Guardar player_id del creador
+
+        # Join con otro jugador (Player_2)
+        URL_JOIN = f"http://localhost:8000/games/{cls.game_id}/join"
+        player_data = {"player_name": "player_2"}
+        r = requests.post(URL_JOIN, json=player_data, headers={"Content-Type": "application/json"})
+        cls.player_2_id = r.json().get("player_id")  # Guardar player_id del segundo jugador
+        assert r.status_code == 200
+
+        #TODO: start game
+
+    def test_skip_turn_in_game(self):
+        URL_SKIP = f"http://localhost:8000/games/{self.game_id}/skip"
+        leave_data = {"player_id": self.player_2_id}
+        r1 = requests.post(URL_SKIP, json=leave_data, headers={"Content-Type": "application/json"})
+        leave_data = {"player_id": self.creator_player_id}
+        r2 = requests.post(URL_SKIP, json=leave_data, headers={"Content-Type": "application/json"})
+        #atleast one must have skipped turn
+        assert r1.status_code == 200 or r2.status_code == 200
+        r2 = requests.post(URL_SKIP, json=leave_data, headers={"Content-Type": "application/json"})
+        #attemped to skip same player twice, must receive error message on the second attempt
+        assert r2.status_code >= 400
+    
+    def test_skip_turn_not_in_game(self):
+        URL_SKIP = f"http://localhost:8000/games/{self.game_id}/skip"
+        leave_data = {"player_id": "NOESTOY"}
+        r = requests.post(URL_SKIP, json=leave_data, headers={"Content-Type": "application/json"})
+        assert r.status_code >= 400
+
 if __name__ == "__main__":
     unittest.main()
