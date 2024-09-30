@@ -33,3 +33,9 @@ def remove_player_from_game(player_id, game_id):
 
 def delete_all():
     repo.tear_down()
+    
+def get_players_names(game_id):
+    list_names= []
+    for player_id in get_game_by_id(game_id)["players"]:
+        list_names.append(repo.get_player(player_id)["name"])
+    return list_names

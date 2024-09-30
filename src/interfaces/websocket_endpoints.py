@@ -1,5 +1,5 @@
 from fastapi import WebSocket, WebSocketDisconnect
-from entities.game.game_utils import get_games, get_game_by_id
+from entities.game.game_utils import get_games, get_players_names
 from interfaces.SocketManagers import public_manager, game_socket_manager
 
 async def public_games(websocket: WebSocket):
@@ -23,8 +23,8 @@ async def connect_game(websocket : WebSocket, game_id, player_id):
     
     if game_id in game_socket_manager.sockets_map:
         if player_id in game_socket_manager.sockets_map[game_id]:
-            await game_socket_manager.user_connect(game_id, player_id, websocket)
-            await websocket.send_json({"type":"SUCCESS","payload": get_game_by_id(game_id)["players"]})
+            await game_socket_manager.user_connect(game_id, player_id, websocket)          
+            await websocket.send_json({"type":"SUCCESS","payload": get_players_names(game_id)})
             try:
                 while True:
                     await websocket.receive_text()
@@ -34,3 +34,4 @@ async def connect_game(websocket : WebSocket, game_id, player_id):
             await websocket.accept()
             await websocket.send_json({"type":"ERROR","payload":"Invalid game_id or player_id"})
             await websocket.close()
+            

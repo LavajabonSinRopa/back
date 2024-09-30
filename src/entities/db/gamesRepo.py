@@ -161,6 +161,10 @@ class gameRepository:
             
 
             session.commit()
+            return({"card_id" : card.unique_id,
+                    "card_kind":card_kind,
+                    "card_type":card_type,
+                    "state":state})
 
         except Exception as e:
             session.rollback()
