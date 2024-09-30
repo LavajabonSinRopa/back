@@ -30,3 +30,7 @@ class LeaveGameRequest(BaseModel):
 
 class SkipTurnRequest(BaseModel):
     player_id: str
+    
+ # POST a games/<game_id>/start   
+class StartGameResponse(BaseModel):
+    player_id: str

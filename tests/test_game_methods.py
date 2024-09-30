@@ -1,5 +1,5 @@
 import unittest
-from src.entities.game.game_utils import add_game,get_games, pass_turn, get_game_by_id, add_to_game
+from src.entities.game.game_utils import add_game,get_games, pass_turn, get_game_by_id, add_to_game, start_game_by_id
 from src.entities.player.player_utils import add_player
 
 class test_game_utils(unittest.TestCase):
@@ -29,6 +29,14 @@ class test_game_utils(unittest.TestCase):
         for _ in range(NofGames):
             pass_turn(game_id=game_id, player_id=darth_id)
         assert get_game_by_id(game_id=game_id)['turn'] <= NofGames+1
+    
+    def test_start_game(self):
+        darth_id = add_player(player_name="darthVader")
+        game_id = add_game(game_name = "DeathStar", creator_id = darth_id)
+        assert get_games()[0]["state"] == "waiting"
+        start_game_by_id(game_id)
+        assert get_games()[0]["state"] == "started"
+
 
 if __name__ == "__main__":
     unittest.main()
