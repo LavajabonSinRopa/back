@@ -9,7 +9,6 @@ from src.entities.game.game_utils import get_players_names
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 
-from interfaces.SocketManagers import game_socket_manager
 
 class Test(unittest.TestCase):
     @classmethod
@@ -25,7 +24,6 @@ class Test(unittest.TestCase):
         
         cls.loop = asyncio.new_event_loop()
         #WS primer jugador
-        
         cls.websocket_urls = [
             f"ws://localhost:8000/games/{cls.game_id}/{cls.player1_id}"
         ]
@@ -150,6 +148,25 @@ class Test(unittest.TestCase):
                 print(f"WebSocket {websocket} cerrado!")
 
         self.assertTrue(received_any, f"No llegó el mensaje esperado: {broadcast_message}")
+    
+    def test4_websocket_broadcast(self):
+        # Probar broadcast por empezar partida
+        self.loop.run_until_complete(asyncio.sleep(2))
+        URL = f"http://localhost:8000/games/{self.game_id}/start"
+        player_data = {"player_id": self.player1_id}
+        r = requests.post(URL, json=player_data, headers={"Content-Type": "application/json"})
+    
+        async def receive_message(websocket):
+            message = await websocket.recv()
+            return message
+        print("--Broadcast receive START GAME--")
+        for websocket in self.websockets:
+            message = self.loop.run_until_complete(receive_message(websocket))
+            message = self.loop.run_until_complete(receive_message(websocket))
+            print(f"Received message: {message}")
+            message_dict = json.loads(message) 
+      
+
 
 
 if __name__ == "__main__":

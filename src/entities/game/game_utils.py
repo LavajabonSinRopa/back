@@ -1,5 +1,6 @@
 from ..db.gamesRepo import repo
 from sqlalchemy.exc import NoResultFound
+from ..player import player_utils
 import uuid
 
 def add_game(game_name, creator_id):
@@ -39,3 +40,21 @@ def get_players_names(game_id):
     for player_id in get_game_by_id(game_id)["players"]:
         list_names.append(repo.get_player(player_id)["name"])
     return list_names
+
+def get_players_status(game_id):
+    list_status = []
+    for player_id in get_game_by_id(game_id)["players"]:
+        list_status.append(repo.get_player(player_id))
+    return list_status
+
+
+
+def start_game_by_id(game_id):
+    game = get_game_by_id(game_id)
+    if game["state"] == "waiting":
+        repo.edit_game_state(game_id,"started")
+        for player_id in game["players"]:
+            player_utils.take_move_card(game_id,player_id)
+            player_utils.take_figures_card(game_id,player_id)
+    else:
+        raise ValueError("Game is not in waiting state")

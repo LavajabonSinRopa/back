@@ -31,20 +31,33 @@ class TestJoinGameEndpoint(unittest.TestCase):
         r = requests.post(URL, json=game_data, headers={"Content-Type": "application/json"})
         assert r.status_code == 200  # (cls.assertEqual da error)
         cls.game_id = r.json().get("game_id")  # Guardar game_id para otros tests
+        cls.creator_id = r.json().get("player_id")
 
-    def test_join_game_success(self):
+    def test1_join_game_success(self):
         # Joinear juego ya creado
         URL = "http://localhost:8000/games/{game_id}/join".format(game_id=self.game_id)
         player_data = {"player_name": "otro nombre"}
         r = requests.post(URL, json=player_data, headers={"Content-Type": "application/json"})
         self.assertEqual(r.status_code, 200)
 
-    def test_join_game_invalid_game_id(self):
+    def test2_join_game_invalid_game_id(self):
         # Joinear juego inválido
         URL = "http://localhost:8000/games/{game_id}/join".format(game_id="invalid_game_id")
         player_data = {"player_name": "otro nombre pero distinto"}
         r = requests.post(URL, json=player_data, headers={"Content-Type": "application/json"})
         self.assertEqual(r.status_code, 404)
+        
+    def test3_join_game_starded_game_id(self):
+        # Joinear juego empezado
+        URL_START = f"http://localhost:8000/games/{self.game_id}/start"
+        start_data = {"player_id": self.creator_id}
+        r = requests.post(URL_START, json=start_data, headers={"Content-Type": "application/json"})
+        
+        URL = "http://localhost:8000/games/{game_id}/join".format(game_id=self.game_id)
+        player_data = {"player_name": "otro nombre"}
+        r = requests.post(URL, json=player_data, headers={"Content-Type": "application/json"})
+        self.assertEqual(r.status_code, 403)
+        
 
 
 class TestLeaveGameEndpoint(unittest.TestCase):
@@ -104,6 +117,36 @@ class TestLeaveGameEndpoint(unittest.TestCase):
         # Flattenear la lista para que assertIn no compare las sublistas de players_in_game con el ID
         players_in_game_flat = [item for sublist in players_in_game for item in sublist]
         self.assertIn(self.creator_player_id, players_in_game_flat) # Verificar que el creador sigue en la partida
+
+class TestStartGameEndpoint(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        # Crear un juego y joinear un jugador
+        game_data = {"game_name": "test_leave_game", "player_name": "player_1"}
+        r = requests.post(URL, json=game_data, headers={"Content-Type": "application/json"})
+        assert r.status_code == 200
+        cls.game_id = r.json().get("game_id")  # Guardar game_id para otros tests
+        cls.creator_player_id = r.json().get("player_id")  # Guardar player_id del creador
+
+        # Join con otro jugador (Player_2)
+        URL_JOIN = f"http://localhost:8000/games/{cls.game_id}/join"
+        player_data = {"player_name": "player_2"}
+        r = requests.post(URL_JOIN, json=player_data, headers={"Content-Type": "application/json"})
+        cls.player_2_id = r.json().get("player_id")  # Guardar player_id del segundo jugador
+        assert r.status_code == 200
+
+    def test_start_game(self):
+        # Verificar que el juego se inicia correctamente
+        URL_START = f"http://localhost:8000/games/{self.game_id}/start"
+        start_data = {"player_id": self.creator_player_id}
+        r = requests.post(URL_START, json=start_data, headers={"Content-Type": "application/json"})
+        self.assertEqual(r.status_code, 200)
+    def test_start_invalid_player(self):
+        # Verificar que el juego no se inicia correctamente
+        URL_START = f"http://localhost:8000/games/{self.game_id}/start"
+        start_data = {"player_id": "invalid_id"}
+        r = requests.post(URL_START, json=start_data, headers={"Content-Type": "application/json"})
+        self.assertEqual(r.status_code, 403)
 
 if __name__ == "__main__":
     unittest.main()

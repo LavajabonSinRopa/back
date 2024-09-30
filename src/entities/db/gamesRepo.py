@@ -198,4 +198,17 @@ class gameRepository:
         finally:
             session.close()
 
+    @staticmethod
+    def edit_game_state(game_id: str, new_state: str):
+        session = Session()
+        try:
+            game = session.query(Game).filter_by(unique_id=game_id).one()
+            game.state = new_state
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            session.close()
+
 repo = gameRepository()
