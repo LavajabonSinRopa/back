@@ -84,3 +84,19 @@ def start_game_by_id(game_id):
             player_utils.take_figures_card(game_id,player_id)
     else:
         raise ValueError("Game is not in waiting state")
+    
+def get_games_with_player_names():
+    games = get_games()
+    return [
+            {
+            "unique_id": game['unique_id'],
+            "name": game['name'],
+            "state": game['state'],
+            "board": game['board'],
+            "turn": game['turn'],
+            "creator": game['creator'],
+            "players": game['players'],
+            "player_names": get_players_names(game_id=game['unique_id'])
+            }
+            for game in games
+        ]

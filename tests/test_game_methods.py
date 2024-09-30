@@ -1,5 +1,5 @@
 import unittest
-from src.entities.game.game_utils import add_game,get_games, pass_turn, get_game_by_id, add_to_game, start_game_by_id
+from src.entities.game.game_utils import add_game,get_games, pass_turn, get_game_by_id, add_to_game, start_game_by_id, get_games_with_player_names
 from src.entities.player.player_utils import add_player
 
 class test_game_utils(unittest.TestCase):
@@ -33,9 +33,13 @@ class test_game_utils(unittest.TestCase):
     def test_start_game(self):
         darth_id = add_player(player_name="darthVader")
         game_id = add_game(game_name = "DeathStar", creator_id = darth_id)
-        assert get_games()[0]["state"] == "waiting"
+        assert get_game_by_id(game_id=game_id)["state"] == "waiting"
         start_game_by_id(game_id)
-        assert get_games()[0]["state"] == "started"
+        assert get_game_by_id(game_id=game_id)["state"] == "started"
+
+    def test_games_with_names(self):
+        games = get_games_with_player_names()
+        assert "player_names" in (games[0]).keys()
 
 
 if __name__ == "__main__":
