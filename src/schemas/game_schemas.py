@@ -1,7 +1,6 @@
 # back/schemas/game_schemas.py
 
 from pydantic import BaseModel
-from typing import List
 
 # Formato de POST a /games
 class CreateGameRequest(BaseModel):
@@ -27,4 +26,7 @@ class GameInResponse(BaseModel):
 
 # POST a games/<game_id>/leave
 class LeaveGameRequest(BaseModel):
+    player_id: str
+
+class SkipTurnRequest(BaseModel):
     player_id: str

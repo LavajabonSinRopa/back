@@ -4,7 +4,7 @@ from sqlalchemy.orm import relationship
 from .settings import DATABASE_FILENAME
 
 # DB config
-engine = create_engine(f'sqlite:///{DATABASE_FILENAME}', echo=True)
+engine = create_engine(f'sqlite:///{DATABASE_FILENAME}', echo=False)
 Base = declarative_base()
 
 # Association table for the many-to-many relationship
@@ -25,8 +25,11 @@ class Game(Base):
     __tablename__ = 'Games'
     unique_id = Column(String, primary_key=True)
     name = Column(String, nullable=False)
+    # "waiting", "started", "finished"
     state = Column(String, nullable=False)
     board = Column(String)
+    # amount of turns that have passed. player[turn%len(players)] is to play
+    turn = Column(Integer)
     creator = Column(String, ForeignKey('Players.unique_id'))
     players = relationship('Player', secondary=game_player_association, back_populates='games')
 
