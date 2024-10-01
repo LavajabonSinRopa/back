@@ -42,6 +42,10 @@ async def join_game(game_id: str, request: JoinGameRequest):
     
     if game["state"] != "waiting":
         raise HTTPException(status_code=403, detail="La partida no está en estado de espera")
+    
+    # Validar cantidad de jugadores
+    if(len(game["players"]) >= 4):
+        raise HTTPException(status_code=403, detail="Game is full!")
 
     # Crear player, agregarlo al juego
     player_id = add_player(player_name=request.player_name)

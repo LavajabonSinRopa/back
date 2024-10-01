@@ -25,7 +25,16 @@ def get_game_by_id(game_id):
     return repo.get_game(game_id)
 
 def add_to_game(player_id,game_id):
-    repo.add_player_to_game(player_id=player_id,game_id=game_id)
+    try:
+        game = repo.get_game(game_id)
+
+        # Verificar que no se llegó a la cantidad máxima de players
+        if len(game["players"]) >= 4:
+            return -1
+        
+        repo.add_player_to_game(player_id=player_id,game_id=game_id)
+    except Exception as e:
+        raise e
 
 def remove_player_from_game(player_id, game_id):
     try:
