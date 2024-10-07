@@ -73,7 +73,7 @@ async def leave_game(game_id: str, request: LeaveGameRequest):
     # Eliminar jugador
     try:
         remove_player_from_game(game_id=game_id, player_id=request.player_id)
-    except NoResultFound:
+    except:
         raise HTTPException(status_code=404, detail="Player does not exist in the game")
     
     # Avisar a los sockets de la partida sobre el jugador que abandona.
@@ -97,6 +97,8 @@ async def skip_turn(game_id: str, request: SkipTurnRequest):
     #Si no pudo saltear
     else:
         raise HTTPException(status_code=418, detail="Not your turn")
+    
+    #TODO: avisar a los otros juagdores que el turno fue salteado
     
 @router.get("")
 def get_all_games():
