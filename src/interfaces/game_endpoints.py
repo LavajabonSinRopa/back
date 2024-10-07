@@ -52,8 +52,11 @@ async def join_game(game_id: str, request: JoinGameRequest):
     add_to_game(player_id=player_id, game_id=game_id)
     game_socket_manager.join_player_to_game_map(game_id,player_id)
 
-    #Avisar a los sockets de la partida sobre la union.
-    await game_socket_manager.broadcast_game(game_id,{"type":"PlayerJoined","payload": request.player_name})
+    # Get name of the player
+    player_name = game['player_names'][game['players'].index(request.player_id)]
+    
+    # Avisar a los sockets de la partida sobre el jugador que abandona.
+    await game_socket_manager.broadcast_game(game_id,{"type":"PlayerJoined","payload": {'player_id' : request.player_id, 'player_name': player_name}})
 
     # Devolver ID unico de jugador para la partida
     return JoinGameResponse(player_id=player_id)
@@ -76,8 +79,11 @@ async def leave_game(game_id: str, request: LeaveGameRequest):
     except:
         raise HTTPException(status_code=404, detail="Player does not exist in the game")
     
+    # Get name of the player
+    player_name = game['player_names'][game['players'].index(request.player_id)]
+    
     # Avisar a los sockets de la partida sobre el jugador que abandona.
-    await game_socket_manager.broadcast_game(game_id,{"type":"PlayerLeft","payload": request.player_id})
+    await game_socket_manager.broadcast_game(game_id,{"type":"PlayerLeft","payload": {'player_id' : request.player_id, 'player_name': player_name}})
 
     # Devolver 200 OK sin data extra
     return Response(status_code=200)
