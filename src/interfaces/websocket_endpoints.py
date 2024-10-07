@@ -20,7 +20,6 @@ async def public_games(websocket: WebSocket):
             break
 
 async def connect_game(websocket : WebSocket, game_id, player_id):
-    
     if game_id in game_socket_manager.sockets_map:
         if player_id in game_socket_manager.sockets_map[game_id]:
             await game_socket_manager.user_connect(game_id, player_id, websocket)          

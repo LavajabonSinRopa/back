@@ -75,16 +75,14 @@ def pass_turn(game_id, player_id):
     repo.pass_turn(game_id=game_id)
     return True
 
-
 def get_players_status(game_id):
     list_status = []
     for player_id in get_game_by_id(game_id)["players"]:
         list_status.append(repo.get_player(player_id))
     return list_status
 
-
-
 def start_game_by_id(game_id):
+    #TODO initialize game board
     game = get_game_by_id(game_id)
     if game["state"] == "waiting":
         repo.edit_game_state(game_id,"started")
@@ -94,18 +92,3 @@ def start_game_by_id(game_id):
     else:
         raise ValueError("Game is not in waiting state")
     
-def get_games_with_player_names():
-    games = get_games()
-    return [
-            {
-            "unique_id": game['unique_id'],
-            "name": game['name'],
-            "state": game['state'],
-            "board": game['board'],
-            "turn": game['turn'],
-            "creator": game['creator'],
-            "players": game['players'],
-            "player_names": get_players_names(game_id=game['unique_id'])
-            }
-            for game in games
-        ]
