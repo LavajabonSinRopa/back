@@ -34,13 +34,13 @@ class test_games_Repo(unittest.TestCase):
         pid,gid = str(uuid.uuid4()),str(uuid.uuid4())
         repo.create_player(name="MESSI",unique_id=pid)
         repo.create_game(unique_id=gid,name = "FUNALDELMUNDIAL",state="waiting",creator_id=pid)
-        repo.create_card(card_type=2,card_kind='figure',player_id=pid,game_id=gid,state='Not Drawn')
+        repo.create_card(card_type=2,card_kind='figure',player_id=pid,game_id=gid,state='not drawn')
         repo.create_card(card_type=4,card_kind='movement',player_id=pid,game_id=gid)
         player = repo.get_player(pid)
         assert len(player['figure_cards']) == 1
         assert len(player['movement_cards']) == 1
         assert player['movement_cards'][0] == 4
-        assert player['figure_cards'][0]['state'] == 'Not Drawn'
+        assert player['figure_cards'][0]['state'] == 'not drawn'
         assert player['figure_cards'][0]['type'] == 2
     
     def test_pass_turn(self):
@@ -55,6 +55,29 @@ class test_games_Repo(unittest.TestCase):
             repo.pass_turn(game_id = gid)
         game = repo.get_game(game_id=gid)
         assert game['turn'] == 70
+
+    def test_take_move_card(self):
+        pid = str(uuid.uuid4())
+        gid = str(uuid.uuid4())
+        repo.create_player(name="MESSI",unique_id=pid)
+        repo.create_game(unique_id=gid,name = "FUNALDELMUNDIAL",state="started",creator_id=pid)
+        repo.add_player_to_game(player_id=pid,game_id=gid)
+        repo.create_card(card_type=4,card_kind='movement',player_id=None,game_id=gid)
+        repo.create_card(card_type=2,card_kind='movement',player_id=None,game_id=gid)
+        repo.take_move_card(pid,gid)
+        assert len(repo.get_move_deck(gid)) == 1
+        assert len(repo.get_player(pid)['movement_cards']) == 1 
+    
+    def test_drawn_fig_card(self):
+        pid = str(uuid.uuid4())
+        gid = str(uuid.uuid4())
+        repo.create_player(name="MESSI",unique_id=pid)
+        repo.create_game(unique_id=gid,name = "FUNALDELMUNDIAL",state="started",creator_id=pid)
+        repo.add_player_to_game(player_id=pid,game_id=gid)
+        repo.create_card(card_type=2,card_kind='figure',player_id=pid,game_id=gid,state="not drawn")
+        assert repo.get_player(pid)['figure_cards'][0]['state'] == "not drawn"
+        repo.drawn_figure_card(player_id=pid)
+        assert repo.get_player(pid)['figure_cards'][0]['state'] == "drawn"
 
 if __name__ == "__main__":
     unittest.main()

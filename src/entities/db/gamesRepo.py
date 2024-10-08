@@ -3,6 +3,7 @@ from sqlalchemy.exc import NoResultFound
 from .models import Game, Player, engine, Figure_card, Movement_card
 from typing import List
 import uuid
+import random
 
 # Create a session
 Session = sessionmaker(bind=engine)
@@ -73,7 +74,6 @@ class gameRepository:
         finally:
             session.close()
 
-    
     @staticmethod
     def get_games() -> List[dict]:
         session = Session()
@@ -93,7 +93,7 @@ class gameRepository:
             ]
         finally:
             session.close()
-
+   
     @staticmethod
     def tear_down():
         session = Session()
@@ -148,16 +148,20 @@ class gameRepository:
         try:
             
             player = session.query(Player).filter_by(unique_id=player_id).one_or_none()
-            if player is None:
-                raise ValueError(f"No player found with ID: {player_id}")
-            
+
             # Instantiate the card based on the specified class
             if card_kind == 'figure':
                 card = Figure_card(unique_id=str(uuid.uuid4()), card_type=card_type, state=state, player_id=player_id, game_id=game_id)
-                player.figure_cards.append(card)
+                if player != None:
+                    player.figure_cards.append(card)
+                else:
+                    session.add(card)
             elif card_kind == 'movement':
                 card = Movement_card(unique_id=str(uuid.uuid4()), card_type=card_type, player_id=player_id, game_id=game_id)
-                player.movement_cards.append(card)
+                if player != None:
+                    player.movement_cards.append(card)
+                else:
+                    session.add(card)
             else:
                 raise ValueError("Invalid card class specified.")
             
@@ -223,6 +227,78 @@ class gameRepository:
         except Exception as e:
             session.rollback()
             raise e
+        finally:
+            session.close()
+
+## Cards
+    @staticmethod
+    def get_move_deck(game_id:str) -> List[dict]:
+        session = Session()
+        try:
+            movement_cards = session.query(Movement_card).filter_by(game_id=game_id,player_id=None).all()
+            return [
+                {
+                    'unique_id':mcard.unique_id,
+                    'card_type':mcard.card_type,
+                    'player_id':mcard.player_id
+                 } 
+                for mcard in movement_cards
+            ]
+        finally:
+            session.close()
+            
+    @staticmethod
+    def take_move_card(player_id:str, game_id: str):
+        session = Session()
+        try:
+            # Retrieve the game
+            game = session.query(Game).filter_by(unique_id=game_id).one_or_none()
+            if game is None:
+                raise ValueError(f"No game found with ID: {game_id}")
+
+            # Retrieve the player
+            player = session.query(Player).filter_by(unique_id=player_id).one_or_none()
+            if player is None:
+                raise ValueError(f"No player found with ID: {player_id}")
+
+            # Retrieve the movement cards
+            movement_cards = session.query(Movement_card).filter_by(player_id=None, game_id=game_id).all()
+            if len(movement_cards) == 0:
+                raise ValueError("No available movement cards")
+
+            # Assign a random movement card to the player
+            card = random.choice(movement_cards)
+            card.player_id = player_id
+            player.movement_cards.append(card)
+            session.commit()
+            return card.card_type
+        except Exception as e:
+            session.rollback()
+            print(f"Error taking random movement card: {e}")
+        finally:
+            session.close()
+    
+    @staticmethod
+    def drawn_figure_card(player_id:str):
+        session = Session()
+        try:
+            # Retrieve the player
+            player = session.query(Player).filter_by(unique_id=player_id).one_or_none()
+            if player is None:
+                raise ValueError(f"No player found with ID: {player_id}")
+
+            if len(player.figure_cards) == 0:
+                raise ValueError("No figure cards")
+            for card in player.figure_cards:
+                if card.state == 'not drawn':
+                    card.state = 'drawn'
+                    session.commit()
+                    return card.card_type
+        
+            raise ValueError("No 'Not drawn' figure cards found") 
+        except Exception as e:
+            session.rollback()
+            print(f"Error drawing figure card: {e}")
         finally:
             session.close()
 
