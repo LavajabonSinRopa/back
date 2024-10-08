@@ -7,7 +7,7 @@ from entities.game.game_utils import (add_game, get_games, get_game_by_id,
 from entities.player.player_utils import add_player
 from schemas.game_schemas import (CreateGameRequest, CreateGameResponse, 
                                   SkipTurnRequest, JoinGameRequest, JoinGameResponse,
-                                  LeaveGameRequest)
+                                  UseMovementCardRequest)
 from interfaces.SocketManagers import public_manager, game_socket_manager 
 from sqlalchemy.exc import NoResultFound
 
@@ -129,9 +129,11 @@ async def start_game(game_id: str, request: LeaveGameRequest):
     
     # Iniciar Partida
     start_game_by_id(game_id)
-    
-    # Avisar a los sockets de la partida sobre el comienzo de la partida.
-    await game_socket_manager.broadcast_game(game_id,{"type":"GameStarted","payload": get_players_status(game_id)})
 
     # Devolver 200 OK sin data extra
     return Response(status_code=200)
+
+@router.post("/{game_id}/move")
+async def start_game(game_id: str, request: UseMovementCardRequest):
+    """Endpoint to use a movement card, modifying the board."""
+    print("Using movement card of type {request.movement_type} in coordinates {request.coordinates}")

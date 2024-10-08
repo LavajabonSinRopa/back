@@ -34,3 +34,9 @@ class SkipTurnRequest(BaseModel):
  # POST a games/<game_id>/start   
 class StartGameResponse(BaseModel):
     player_id: str
+
+# POST a games/<game_id>/move
+class UseMovementCardRequest(BaseModel):
+    player_id: str
+    movement_type: str
+    coordinates: tuple[int, int]
