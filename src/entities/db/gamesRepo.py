@@ -49,7 +49,8 @@ class gameRepository:
                 "board": game.board,
                 "turn": game.turn,
                 "creator": game.creator,
-                "players": [player.unique_id for player in game.players]
+                "players": [player.unique_id for player in game.players],
+                "player_names": [player.name for player in game.players]
             }
         except NoResultFound:
             raise ValueError("Game_model does not exist")
@@ -87,7 +88,8 @@ class gameRepository:
                     "board": game.board,
                     "turn": game.turn,
                     "creator": game.creator,
-                    "players": [player.unique_id for player in game.players]
+                    "players": [player.unique_id for player in game.players],
+                    "player_names": [player.name for player in game.players]
                 }
                 for game in games
             ]
