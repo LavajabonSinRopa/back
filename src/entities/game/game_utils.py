@@ -24,6 +24,38 @@ def get_game_by_id(game_id):
     """
     return repo.get_game(game_id)
 
+
+def get_players_status(game_id):
+    list_status = []
+    for player_id in get_game_by_id(game_id)["players"]:
+        list_status.append(repo.get_player(player_id))
+    return list_status
+
+
+def get_players_names(game_id):
+    list_names= []
+    for player_id in get_game_by_id(game_id)["players"]:
+        list_names.append(repo.get_player(player_id)["name"])
+    return list_names
+    
+def get_games_with_player_names():
+    games = get_games()
+    return [
+            {
+            "unique_id": game['unique_id'],
+            "name": game['name'],
+            "state": game['state'],
+            "board": game['board'],
+            "turn": game['turn'],
+            "creator": game['creator'],
+            "players": game['players'],
+            "player_names": get_players_names(game_id=game['unique_id'])
+            }
+            for game in games
+        ]
+  
+
+
 def add_to_game(player_id,game_id):
     try:
         game = repo.get_game(game_id)
@@ -41,9 +73,6 @@ def remove_player_from_game(player_id, game_id):
         repo.remove_player_from_game(player_id=player_id, game_id=game_id)
     except Exception as e:
         raise e
-
-def delete_all():
-    repo.tear_down()
     
 def get_players_names(game_id):
     return get_game_by_id(game_id=game_id)['player_names']
@@ -78,14 +107,48 @@ def get_players_status(game_id):
         list_status.append(repo.get_player(player_id))
     return list_status
 
+def create_move_deck_for_game(game_id):
+    for card_type in range(7):
+        for _ in range(7):
+            repo.create_card(card_type=card_type, card_kind='movement', player_id=None, game_id=game_id)
+    
+def create_figure_cards(game_id):
+    amount_players = len(get_players_status(game_id))
+    amount_easy_cards = 14 // amount_players
+    amount_hard_cards = 36 // amount_players
+            # Crear cartas fáciles y difíciles
+    easy_cards = [0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6]
+    hard_cards = [7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 23, 24, 24]
+
+    # Distribuir cartas fáciles
+    for player in get_players_status(game_id):
+        player_id = player['unique_id']
+        for _ in range(amount_easy_cards):
+            card_type = easy_cards.pop()
+            repo.create_card(card_type=card_type, card_kind='figure', player_id=player_id,game_id=game_id,state='not drawn')
+    # Distribuir cartas dificiles
+    for player in get_players_status(game_id):
+        player_id = player['unique_id']
+        for _ in range(amount_hard_cards):
+            card_type = hard_cards.pop()
+            repo.create_card(card_type=card_type, card_kind='figure', player_id=player_id,game_id=game_id,state='not drawn')
+
+def get_move_deck(game_id):
+    return repo.get_move_deck(game_id)
+
 def start_game_by_id(game_id):
     #TODO initialize game board
     game = get_game_by_id(game_id)
     if game["state"] == "waiting":
         repo.edit_game_state(game_id,"started")
+        create_move_deck_for_game(game_id)
+        create_figure_cards(game_id)
         for player_id in game["players"]:
-            take_move_card(game_id,player_id)
-            take_figures_card(game_id,player_id)
+            for _ in range(3):
+                player_utils.take_move_card(player_id,game_id)
+                player_utils.drawn_figure_card(player_id)
     else:
         raise ValueError("Game is not in waiting state")
-    
+  
+def delete_all():
+    repo.tear_down()

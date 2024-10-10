@@ -19,7 +19,7 @@ python3 src/main.py
 Los diferentes tests se encuentran modularizados en distintos archivos según la funcionalidad.
 En este ejemplo testeamos los endpoints en sí.
 ```sh
-PYTHONPATH=$(pwd) python3 tests/test_player_methods.py 
+PYTHONPATH=$(pwd) python3 tests/test_game_endpoints.py 
 ```
 Todos los archivos dentro de la carpeta `back/tests` corresponden a tests.
 Recordar que el servidor debe estar funcionando para poder realizarlos. 
