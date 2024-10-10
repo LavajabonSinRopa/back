@@ -1,12 +1,12 @@
 from fastapi import WebSocket, WebSocketDisconnect
-from entities.game.game_utils import get_games, get_players_names, get_players_status, get_game_by_id
+from entities.game.game_utils import get_games_with_player_names, get_players_names, get_players_status, get_game_by_id
 from interfaces.SocketManagers import public_manager, game_socket_manager
 
 async def public_games(websocket: WebSocket):
     await public_manager.connect(websocket)
     print(f"Public WS Connections:\n {public_manager.connections}")
     try:
-        games = get_games()
+        games = get_games_with_player_names()
         games_listWS = {"type": "CreatedGames","payload": games} 
         await public_manager.send_personal_message(games_listWS, websocket)
     except WebSocketDisconnect:

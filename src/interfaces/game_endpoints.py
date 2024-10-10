@@ -54,6 +54,9 @@ async def join_game(game_id: str, request: JoinGameRequest):
 
     #Avisar a los sockets de la partida sobre la union.
     await game_socket_manager.broadcast_game(game_id,{"type":"PlayerJoined","payload": request.player_name})
+    
+    #Actualizar la cantidad de jugadores a los que buscan partida.
+    await public_manager.broadcast({"type":"CreatedGames","payload": get_games_with_player_names()})
 
     # Devolver ID unico de jugador para la partida
     return JoinGameResponse(player_id=player_id)
@@ -78,6 +81,9 @@ async def leave_game(game_id: str, request: LeaveGameRequest):
     
     # Avisar a los sockets de la partida sobre el jugador que abandona.
     await game_socket_manager.broadcast_game(game_id,{"type":"PlayerLeft","payload": request.player_id})
+    
+    #Actualizar la cantidad de jugadores a los que buscan partida.
+    await public_manager.broadcast({"type":"CreatedGames","payload": get_games_with_player_names()})
 
     # Devolver 200 OK sin data extra
     return Response(status_code=200)
