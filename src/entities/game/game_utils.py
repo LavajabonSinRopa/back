@@ -1,7 +1,7 @@
 from ..db.gamesRepo import repo
 from sqlalchemy.exc import NoResultFound
 import uuid
-from ..player.player_utils import take_figures_card, take_move_card
+from ..player.player_utils import drawn_figure_card, take_move_card
 
 
 def add_game(game_name, creator_id):
@@ -145,8 +145,8 @@ def start_game_by_id(game_id):
         create_figure_cards(game_id)
         for player_id in game["players"]:
             for _ in range(3):
-                player_utils.take_move_card(player_id,game_id)
-                player_utils.drawn_figure_card(player_id)
+                take_move_card(player_id,game_id)
+                drawn_figure_card(player_id)
     else:
         raise ValueError("Game is not in waiting state")
   

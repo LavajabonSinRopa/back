@@ -6,7 +6,7 @@ import os
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 
-from entities.player.player_utils import add_player, take_move_card, take_figures_card, AMOUNT_FIGURE_FOR_PLAYER
+from entities.player.player_utils import add_player, take_move_card, drawn_figure_card
 
 @pytest.fixture
 def mock_repo():
@@ -22,13 +22,12 @@ def test_add_player(mock_repo):
     mock_repo.create_player.assert_called_once
 
 def test_take_move_card(mock_repo):
-    mock_repo.create_card.return_value = card_info
-    assert take_move_card('X','X') == card_info
+    take_move_card('X','X')
+    mock_repo.take_move_card.assert_called_once()
 
 def test_take_figures_card(mock_repo):
-    mock_repo.create_card.return_value = card_info
-    assert card_info in take_figures_card('X','X')
-    assert mock_repo.create_card.call_count == AMOUNT_FIGURE_FOR_PLAYER
+    drawn_figure_card('X')
+    mock_repo.drawn_figure_card.assert_called_once()
 
 # class test_player_utils(unittest.TestCase):
 #     def test1_take_move_card(self):

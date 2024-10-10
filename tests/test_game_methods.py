@@ -25,7 +25,7 @@ def mock_take_move_card():
 
 @pytest.fixture
 def mock_take_figure_card():
-    with patch('entities.game.game_utils.take_figures_card') as mock:
+    with patch('entities.game.game_utils.drawn_figure_card') as mock:
         yield mock
 
 def test_add_game_success(mock_repo):
