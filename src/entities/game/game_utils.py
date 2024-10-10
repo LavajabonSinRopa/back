@@ -1,7 +1,7 @@
 from ..db.gamesRepo import repo
 from sqlalchemy.exc import NoResultFound
 import uuid
-from ..player import player_utils
+from ..player.player_utils import take_figures_card, take_move_card
 
 
 def add_game(game_name, creator_id):
@@ -29,7 +29,7 @@ def add_to_game(player_id,game_id):
         game = repo.get_game(game_id)
 
         # Verificar que no se llegó a la cantidad máxima de players
-        if len(game["players"]) >= 4:
+        if len(game["players"]) >= 4 or game['state'] != 'waiting':
             return -1
         
         repo.add_player_to_game(player_id=player_id,game_id=game_id)
@@ -46,10 +46,7 @@ def delete_all():
     repo.tear_down()
     
 def get_players_names(game_id):
-    list_names= []
-    for player_id in get_game_by_id(game_id)["players"]:
-        list_names.append(repo.get_player(player_id)["name"])
-    return list_names
+    return get_game_by_id(game_id=game_id)['player_names']
 
 def pass_turn(game_id, player_id):
     """
@@ -87,8 +84,8 @@ def start_game_by_id(game_id):
     if game["state"] == "waiting":
         repo.edit_game_state(game_id,"started")
         for player_id in game["players"]:
-            player_utils.take_move_card(game_id,player_id)
-            player_utils.take_figures_card(game_id,player_id)
+            take_move_card(game_id,player_id)
+            take_figures_card(game_id,player_id)
     else:
         raise ValueError("Game is not in waiting state")
     

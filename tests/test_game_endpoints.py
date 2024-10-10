@@ -121,6 +121,7 @@ def test_join_game_success(mock_add_player, mock_game_socket_manager, mock_get_g
     mock_get_game_by_id.assert_called_once_with("Test_Game")
     mock_add_player.assert_called_once_with(player_name='Test_Player')
     mock_add_to_game.assert_called_once_with(player_id='1', game_id='Test_Game')
+    mock_game_socket_manager.broadcast_game.assert_called_once_with('Test_Game', {'type': 'PlayerJoined', 'payload': {'player_id': '1', 'player_name': 'Test_Player'}})
 
 def test_join_game_failure(mock_add_player, mock_game_socket_manager, mock_get_games, mock_get_game_by_id, mock_add_to_game):
     
@@ -135,6 +136,7 @@ def test_join_game_failure(mock_add_player, mock_game_socket_manager, mock_get_g
     assert response.status_code == 404
     mock_add_player.assert_not_called
     mock_add_to_game.assert_not_called
+    mock_game_socket_manager.broadcast_game.assert_not_called
 
 
 def test_join_game_full(mock_add_player, mock_game_socket_manager, mock_get_games, mock_get_game_by_id, mock_add_to_game):
@@ -162,10 +164,12 @@ def test_join_not_waiting(mock_add_player, mock_game_socket_manager, mock_get_ga
     assert response.status_code == 403
     mock_add_player.assert_not_called
     mock_add_to_game.assert_not_called
+    mock_game_socket_manager.broadcast_game.assert_not_called
+
 
 def test_leave_game_success(mock_get_game_by_id, mock_remove_player_from_game, mock_game_socket_manager):
     
-    mock_get_game_by_id.return_value = {'players': ['0','Test_Player'], 'state': 'waiting', 'creator': '0'}
+    mock_get_game_by_id.return_value = {'players': ['0','Test_Player'], 'state': 'waiting', 'creator': '0', 'player_names': ['mauri', 'rimau']}
     mock_game_socket_manager.broadcast_game = AsyncMock()
 
     request_data = {'player_id': 'Test_Player'}
@@ -191,13 +195,16 @@ def test_leave_game_no_game(mock_get_game_by_id, mock_remove_player_from_game, m
     
     mock_get_game_by_id.side_effect = Exception("TEST")
     mock_game_socket_manager.broadcast_game = AsyncMock()
+    mock_game_socket_manager.broadcast_game.return_value = "MESI"
 
     request_data = {'player_id': 'Test_Player'}
     response = client.post("/games/Test_Game/leave", json=request_data)
 
     assert response.status_code == 404
     mock_get_game_by_id.assert_called_once_with("Test_Game")
-    mock_remove_player_from_game.not_called()
+    mock_remove_player_from_game.assert_not_called()
+    mock_game_socket_manager.broadcast_game.assert_not_called()
+
 
 def test_leave_game_not_in_game(mock_get_game_by_id, mock_remove_player_from_game, mock_game_socket_manager):
     
@@ -245,33 +252,5 @@ def test_get_all_games(mock_get_games):
     response = client.get("/games")
     assert response.status_code == 200
 
-# class TestStartGameEndpoint(unittest.TestCase):
-#     @classmethod
-#     def setUpClass(cls):
-#         # Crear un juego y joinear un jugador
-#         game_data = {"game_name": "test_leave_game", "player_name": "player_1"}
-#         r = requests.post(URL, json=game_data, headers={"Content-Type": "application/json"})
-#         assert r.status_code == 200
-#         cls.game_id = r.json().get("game_id")  # Guardar game_id para otros tests
-#         cls.creator_player_id = r.json().get("player_id")  # Guardar player_id del creador
 
-#         # Join con otro jugador (Player_2)
-#         URL_JOIN = f"http://localhost:8000/games/{cls.game_id}/join"
-#         player_data = {"player_name": "player_2"}
-#         r = requests.post(URL_JOIN, json=player_data, headers={"Content-Type": "application/json"})
-#         cls.player_2_id = r.json().get("player_id")  # Guardar player_id del segundo jugador
-#         assert r.status_code == 200
-
-#     def test_start_game(self):
-#         # Verificar que el juego se inicia correctamente
-#         URL_START = f"http://localhost:8000/games/{self.game_id}/start"
-#         start_data = {"player_id": self.creator_player_id}
-#         r = requests.post(URL_START, json=start_data, headers={"Content-Type": "application/json"})
-#         self.assertEqual(r.status_code, 200)
-#     def test_start_invalid_player(self):
-#         # Verificar que el juego no se inicia correctamente
-#         URL_START = f"http://localhost:8000/games/{self.game_id}/start"
-#         start_data = {"player_id": "invalid_id"}
-#         r = requests.post(URL_START, json=start_data, headers={"Content-Type": "application/json"})
-#         self.assertEqual(r.status_code, 403)
 
