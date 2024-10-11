@@ -56,10 +56,12 @@ class Movement_card(Base):
 
 class Table(Base):
     __tablename__ = 'Tables'
-    unique_id = Column(String, primary_key=True)  # Ensure a primary key exists
-    x_cordinate = Column(Integer, nullable=False)
-    y_cordinate = Column(Integer, nullable=False)
+    unique_id = Column(String, primary_key=True)
+    x_coordinate = Column(Integer, nullable=False)
+    y_coordinate = Column(Integer, nullable=False)
     color = Column(String, nullable=False)  # red, green, blue, yellow
+    game_id = Column(String, ForeignKey('Games.unique_id'))
+    game = relationship('Game')
 
 # Crea las tablas en la base de datos
 Base.metadata.create_all(engine)

@@ -78,6 +78,18 @@ class test_games_Repo(unittest.TestCase):
         assert repo.get_player(pid)['figure_cards'][0]['state'] == "not drawn"
         repo.drawn_figure_card(player_id=pid)
         assert repo.get_player(pid)['figure_cards'][0]['state'] == "drawn"
+        
+    def test_create_table(self):
+        pid = str(uuid.uuid4())
+        gid = str(uuid.uuid4())
+        repo.create_player(name="MESSI",unique_id=pid)
+        repo.create_game(unique_id=gid,name = "FUNALDELMUNDIAL",state="started",creator_id=pid)
+        repo.create_table(game_id=gid)
+        repo.add_player_to_game(player_id=pid,game_id=gid)
+        repo.create_table(game_id=gid)
+        assert len(repo.get_table(game_id=gid)) == 6 
+        for x_coordinate in range(6):
+            assert len(repo.get_table(game_id=gid)[x_coordinate]) == 6
 
 if __name__ == "__main__":
     unittest.main()

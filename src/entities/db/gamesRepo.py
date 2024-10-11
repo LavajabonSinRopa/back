@@ -305,5 +305,43 @@ class gameRepository:
             print(f"Error drawing figure card: {e}")
         finally:
             session.close()
-
+    
+    @staticmethod
+    def create_table(game_id: str):
+        session = Session()
+        game = session.query(Game).filter_by(unique_id=game_id).one_or_none()
+        
+        colors = ['red', 'green', 'blue', 'yellow']
+        
+        try:
+            if game is None:
+                raise ValueError(f"No game found with ID: {game_id}")
+            
+            for x in range(6):
+                for y in range(6):
+                    color = random.choice(colors)
+                    table = Table(unique_id=str(uuid.uuid4()), x_coordinate=x, y_coordinate=y, color=color, game_id=game_id)
+                    session.add(table)
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            print(f"Error creating table: {e}")
+        finally:
+            session.close()
+            
+    @staticmethod
+    def get_table(game_id:str) -> List[List[str]]:
+        session = Session()
+        try:
+            tables = session.query(Table).filter_by(game_id=game_id).all()
+            
+            table_matrix = [[None for _ in range(6)] for _ in range(6)]
+            
+            for table in tables:
+                table_matrix[table.x_coordinate][table.y_coordinate] = table.color
+            return table_matrix
+        except Exception as e:
+            print(f"Error getting table: {e}")
+        finally:
+            session.close()
 repo = gameRepository()
