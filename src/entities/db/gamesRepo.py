@@ -1,6 +1,6 @@
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import NoResultFound
-from .models import Game, Player, engine, Figure_card, Movement_card, Table
+from .models import Game, Player, engine, Figure_card, Movement_card, Board
 from typing import List
 import uuid
 import random
@@ -44,9 +44,8 @@ class gameRepository:
             game = session.query(Game).filter_by(unique_id=game_id).one()
             return {
                 "unique_id": game.unique_id,
-                "name": game.name,
+                "name": game.name,  
                 "state": game.state,
-                "board": game.board,
                 "turn": game.turn,
                 "creator": game.creator,
                 "players": [player.unique_id for player in game.players]
@@ -84,7 +83,7 @@ class gameRepository:
                     "unique_id": game.unique_id,
                     "name": game.name,
                     "state": game.state,
-                    "board": game.board,
+                    "board": gameRepository.get_board(game.unique_id),
                     "turn": game.turn,
                     "creator": game.creator,
                     "players": [player.unique_id for player in game.players]
@@ -98,14 +97,14 @@ class gameRepository:
     def tear_down():
         session = Session()
         try:
-            # Delete all entries from the Players table
+            # Delete all entries from the Players board
             session.query(Player).delete()
-            # Delete all entries from the Games table
+            # Delete all entries from the Games board
             session.query(Game).delete()
-            # Deleete all entries from the Cards table
+            # Deleete all entries from the Cards board
             session.query(Figure_card).delete()
             session.query(Movement_card).delete()
-            session.query(Table).delete()
+            session.query(Board).delete()
             # Commit the changes
             session.commit()
         except Exception as e:
@@ -307,7 +306,7 @@ class gameRepository:
             session.close()
     
     @staticmethod
-    def create_table(game_id: str):
+    def create_board(game_id: str):
         session = Session()
         game = session.query(Game).filter_by(unique_id=game_id).one_or_none()
         
@@ -320,28 +319,60 @@ class gameRepository:
             for x in range(6):
                 for y in range(6):
                     color = random.choice(colors)
-                    table = Table(unique_id=str(uuid.uuid4()), x_coordinate=x, y_coordinate=y, color=color, game_id=game_id)
-                    session.add(table)
+                    board = Board(unique_id=str(uuid.uuid4()), x_coordinate=x, y_coordinate=y, color=color, game_id=game_id)
+                    session.add(board)
             session.commit()
         except Exception as e:
             session.rollback()
-            print(f"Error creating table: {e}")
+            print(f"Error creating board: {e}")
         finally:
             session.close()
             
     @staticmethod
-    def get_table(game_id:str) -> List[List[str]]:
+    def get_board(game_id:str) -> List[List[str]]:
         session = Session()
         try:
-            tables = session.query(Table).filter_by(game_id=game_id).all()
+            cells = session.query(Board).filter_by(game_id=game_id).all()
             
-            table_matrix = [[None for _ in range(6)] for _ in range(6)]
+            board_matrix = [[None for _ in range(6)] for _ in range(6)]
             
-            for table in tables:
-                table_matrix[table.x_coordinate][table.y_coordinate] = table.color
-            return table_matrix
+            for cell in cells:
+                board_matrix[cell.x_coordinate][cell.y_coordinate] = cell.color
+            return board_matrix
         except Exception as e:
-            print(f"Error getting table: {e}")
+            print(f"Error getting board: {e}")
         finally:
             session.close()
+    
+    @staticmethod
+    def swap_positions_board(game_id: str, x1: int, y1: int, x2: int, y2: int):
+        session = Session()
+        try:
+            if x1 < 0 or x1 > 5 or y1 < 0 or y1 > 5 or x2 < 0 or x2 > 5 or y2 < 0 or y2 > 5:
+                raise ValueError("Invalid coordinates")
+            
+            game = session.query(Game).filter_by(unique_id=game_id).one_or_none()
+            
+            if game is None:
+                raise ValueError(f"No game found with ID: {game_id}")
+
+            if game.state != 'started':
+                raise ValueError("Game is not started")
+            
+            cell_1 = session.query(Board).filter_by(game_id=game_id,x_coordinate=x1,y_coordinate=y1).one_or_none()
+            cell_2 = session.query(Board).filter_by(game_id=game_id,x_coordinate=x2,y_coordinate=y2).one_or_none()
+            
+            if cell_1 is None or cell_2 is None:
+                raise ValueError("One or both cells do not exist")
+        
+            temp = cell_1.color
+            cell_1.color = cell_2.color
+            cell_2.color = temp
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            print(f"Error swapping positions in board: {e}")
+        finally:
+            session.close()
+            
 repo = gameRepository()

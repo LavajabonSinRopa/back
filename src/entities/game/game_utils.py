@@ -32,6 +32,24 @@ def get_players_status(game_id):
     return list_status
 
 
+def get_game_status(game_id):
+    game = get_game_by_id(game_id)
+    
+    if game is None:
+        raise ValueError(f"No game found with ID: {game_id}")
+    
+    status = {
+        "unique_id": game['unique_id'],
+        "name": game['name'],
+        "state": game['state'],
+        "board": repo.get_board(game_id),
+        "turn": game['turn'],
+        "creator": game['creator'],
+        "players": get_players_status(game_id)
+    }
+    return status
+
+
 def get_players_names(game_id):
     list_names= []
     for player_id in get_game_by_id(game_id)["players"]:
@@ -45,7 +63,7 @@ def get_games_with_player_names():
             "unique_id": game['unique_id'],
             "name": game['name'],
             "state": game['state'],
-            "board": game['board'],
+            "board": repo.get_board(game_id=game['unique_id']),
             "turn": game['turn'],
             "creator": game['creator'],
             "players": game['players'],
@@ -133,6 +151,7 @@ def start_game_by_id(game_id):
     game = get_game_by_id(game_id)
     if game["state"] == "waiting":
         repo.edit_game_state(game_id,"started")
+        repo.create_board(game_id)
         create_move_deck_for_game(game_id)
         create_figure_cards(game_id)
         for player_id in game["players"]:

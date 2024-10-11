@@ -3,7 +3,7 @@
 from fastapi import APIRouter, HTTPException, Response
 from entities.game.game_utils import (add_game, get_games, get_game_by_id, 
                                       add_to_game, remove_player_from_game, pass_turn,
-                                      start_game_by_id,get_players_status,get_games_with_player_names)
+                                      start_game_by_id,get_game_status,get_games_with_player_names)
 from entities.player.player_utils import add_player
 from schemas.game_schemas import (CreateGameRequest, CreateGameResponse, 
                                   SkipTurnRequest, JoinGameRequest, JoinGameResponse,
@@ -137,7 +137,7 @@ async def start_game(game_id: str, request: LeaveGameRequest):
     start_game_by_id(game_id)
     
     # Avisar a los sockets de la partida sobre el comienzo de la partida.
-    await game_socket_manager.broadcast_game(game_id,{"type":"GameStarted","payload": get_players_status(game_id)})
+    await game_socket_manager.broadcast_game(game_id,{"type":"GameStarted","payload": get_game_status(game_id)})
 
     # Devolver 200 OK sin data extra
     return Response(status_code=200)

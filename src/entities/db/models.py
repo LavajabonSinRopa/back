@@ -27,7 +27,6 @@ class Game(Base):
     name = Column(String, nullable=False)
     # "waiting", "started", "finished"
     state = Column(String, nullable=False)
-    board = Column(String)
     # amount of turns that have passed. player[turn%len(players)] is to play
     turn = Column(Integer)
     creator = Column(String, ForeignKey('Players.unique_id'))
@@ -54,8 +53,8 @@ class Movement_card(Base):
     player = relationship('Player', back_populates='movement_cards')
     game = relationship('Game')
 
-class Table(Base):
-    __tablename__ = 'Tables'
+class Board(Base):
+    __tablename__ = 'Boards'
     unique_id = Column(String, primary_key=True)
     x_coordinate = Column(Integer, nullable=False)
     y_coordinate = Column(Integer, nullable=False)

@@ -1,5 +1,5 @@
 import unittest
-from src.entities.game.game_utils import add_game,get_games, pass_turn, get_game_by_id, add_to_game, start_game_by_id,get_games_with_player_names,get_players_status, create_figure_cards, create_move_deck_for_game, get_move_deck
+from src.entities.game.game_utils import add_game,get_games, pass_turn, get_game_by_id, add_to_game, start_game_by_id,get_games_with_player_names,get_players_status, create_figure_cards, create_move_deck_for_game, get_move_deck, get_game_status
 from src.entities.player.player_utils import add_player
 
 class test_game_utils(unittest.TestCase):
@@ -58,6 +58,12 @@ class test_game_utils(unittest.TestCase):
         for player in get_players_status(game_id):
             assert len(player['figure_cards']) == 25
             assert len(player['movement_cards']) == 3
+        
+        board = get_game_status(game_id)['board']
+        for x in range(6):
+            for y in range(6):
+                assert board[x][y] != None
+        
 
     def test_games_with_names(self):
         games = get_games_with_player_names()
