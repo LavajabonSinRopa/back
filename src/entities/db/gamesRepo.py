@@ -1,6 +1,6 @@
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import NoResultFound
-from .models import Game, Player, engine, Figure_card, Movement_card
+from .models import Game, Player, engine, Figure_card, Movement_card, Table
 from typing import List
 import uuid
 import random
@@ -102,6 +102,10 @@ class gameRepository:
             session.query(Player).delete()
             # Delete all entries from the Games table
             session.query(Game).delete()
+            # Deleete all entries from the Cards table
+            session.query(Figure_card).delete()
+            session.query(Movement_card).delete()
+            session.query(Table).delete()
             # Commit the changes
             session.commit()
         except Exception as e:

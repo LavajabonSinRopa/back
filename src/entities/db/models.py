@@ -37,7 +37,7 @@ class Figure_card(Base):
     __tablename__ = 'Figure_cards'
     unique_id = Column(String, primary_key=True)  # Ensure a primary key exists
     card_type = Column(Integer)
-    state = Column(String, nullable=False)  # 'Drawn', 'Not drawn', 'Blocked'
+    state = Column(String, nullable=False)  # 'drawn', 'not drawn', 'blocked'
     game_id = Column(String, ForeignKey('Games.unique_id'))
     player_id = Column(String, ForeignKey('Players.unique_id'))
 
@@ -53,6 +53,13 @@ class Movement_card(Base):
 
     player = relationship('Player', back_populates='movement_cards')
     game = relationship('Game')
+
+class Table(Base):
+    __tablename__ = 'Tables'
+    unique_id = Column(String, primary_key=True)  # Ensure a primary key exists
+    x_cordinate = Column(Integer, nullable=False)
+    y_cordinate = Column(Integer, nullable=False)
+    color = Column(String, nullable=False)  # red, green, blue, yellow
 
 # Crea las tablas en la base de datos
 Base.metadata.create_all(engine)
