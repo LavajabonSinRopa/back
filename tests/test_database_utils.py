@@ -5,6 +5,7 @@ from src.entities.db.gamesRepo import repo
 NofGames = 10
 NofPlayers = NofGames*2
 
+#WRITES TO DB
 class test_games_Repo(unittest.TestCase):
     def test_tear_down(self):
         repo.tear_down()
