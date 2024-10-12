@@ -52,7 +52,7 @@ async def join_game(game_id: str, request: JoinGameRequest):
     add_to_game(player_id=player_id, game_id=game_id)
     game_socket_manager.join_player_to_game_map(game_id,player_id)
     
-    # Avisar a los sockets de la partida sobre el jugador que abandona.
+    # Avisar a los sockets de la partida sobre el jugador que se une.
     await game_socket_manager.broadcast_game(game_id,{"type":"PlayerJoined","payload": {'player_id' : player_id, 'player_name': request.player_name}})
 
     # Devolver ID unico de jugador para la partida
