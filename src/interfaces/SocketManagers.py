@@ -14,7 +14,7 @@ class PublicManager:
         
     async def disconnect(self, websocket: WebSocket):
         if websocket is not None:
-            await websocket.close()
+            websocket.close()
         
         if websocket in self.connections:
             self.connections.remove(websocket)
