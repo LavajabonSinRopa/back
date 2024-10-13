@@ -63,7 +63,6 @@ def get_games_with_player_names():
             "unique_id": game['unique_id'],
             "name": game['name'],
             "state": game['state'],
-            "board": repo.get_board(game_id=game['unique_id']),
             "turn": game['turn'],
             "creator": game['creator'],
             "players": game['players'],

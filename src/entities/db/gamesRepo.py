@@ -99,11 +99,11 @@ class gameRepository:
     def tear_down():
         session = Session()
         try:
-            # Delete all entries from the Players board
+            # Delete all entries from the Players table
             session.query(Player).delete()
-            # Delete all entries from the Games board
+            # Delete all entries from the Games table
             session.query(Game).delete()
-            # Deleete all entries from the Cards board
+            # Deleete all entries from the Cards table
             session.query(Figure_card).delete()
             session.query(Movement_card).delete()
             # Commit the changes
