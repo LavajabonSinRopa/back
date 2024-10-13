@@ -31,6 +31,7 @@ class Game(Base):
     turn = Column(Integer)
     creator = Column(String, ForeignKey('Players.unique_id'))
     players = relationship('Player', secondary=game_player_association, back_populates='games')
+    board = Column(String)
 
 class Figure_card(Base):
     __tablename__ = 'Figure_cards'
@@ -51,15 +52,6 @@ class Movement_card(Base):
     player_id = Column(String, ForeignKey('Players.unique_id'))
 
     player = relationship('Player', back_populates='movement_cards')
-    game = relationship('Game')
-
-class Board(Base):
-    __tablename__ = 'Boards'
-    unique_id = Column(String, primary_key=True)
-    x_coordinate = Column(Integer, nullable=False)
-    y_coordinate = Column(Integer, nullable=False)
-    color = Column(String, nullable=False)  # red, green, blue, yellow
-    game_id = Column(String, ForeignKey('Games.unique_id'))
     game = relationship('Game')
 
 # Crea las tablas en la base de datos

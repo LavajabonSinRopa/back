@@ -134,7 +134,10 @@ async def start_game(game_id: str, request: LeaveGameRequest):
         raise HTTPException(status_code=403, detail="Solo el creador puede iniciar la partida")
     
     # Iniciar Partida
-    start_game_by_id(game_id)
+    try:
+        start_game_by_id(game_id)
+    except ValueError:
+        raise HTTPException(status_code=403, detail="La partida ya está iniciada")
     
     # Avisar a los sockets de la partida sobre el comienzo de la partida.
     await game_socket_manager.broadcast_game(game_id,{"type":"GameStarted","payload": get_game_status(game_id)})
