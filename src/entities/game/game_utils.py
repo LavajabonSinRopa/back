@@ -1,7 +1,7 @@
 from ..db.gamesRepo import repo
 from sqlalchemy.exc import NoResultFound
 import uuid
-from ..player import player_utils
+from ..player.player_utils import drawn_figure_card, take_move_card
 
 
 def add_game(game_name, creator_id):
@@ -79,7 +79,7 @@ def add_to_game(player_id,game_id):
         game = repo.get_game(game_id)
 
         # Verificar que no se llegó a la cantidad máxima de players
-        if len(game["players"]) >= 4:
+        if len(game["players"]) >= 4 or game['state'] != 'waiting':
             return -1
         
         repo.add_player_to_game(player_id=player_id,game_id=game_id)
@@ -91,6 +91,9 @@ def remove_player_from_game(player_id, game_id):
         repo.remove_player_from_game(player_id=player_id, game_id=game_id)
     except Exception as e:
         raise e
+    
+def get_players_names(game_id):
+    return get_game_by_id(game_id=game_id)['player_names']
 
 def pass_turn(game_id, player_id):
     """
@@ -116,6 +119,11 @@ def pass_turn(game_id, player_id):
     repo.pass_turn(game_id=game_id)
     return True
 
+def get_players_status(game_id):
+    list_status = []
+    for player_id in get_game_by_id(game_id)["players"]:
+        list_status.append(repo.get_player(player_id))
+    return list_status
 
 def create_move_deck_for_game(game_id):
     for card_type in range(7):
@@ -146,8 +154,8 @@ def create_figure_cards(game_id):
 def get_move_deck(game_id):
     return repo.get_move_deck(game_id)
 
-
 def start_game_by_id(game_id):
+    #TODO initialize game board
     game = get_game_by_id(game_id)
     if game["state"] == "waiting":
         repo.edit_game_state(game_id,"started")
@@ -156,11 +164,10 @@ def start_game_by_id(game_id):
         create_figure_cards(game_id)
         for player_id in game["players"]:
             for _ in range(3):
-                player_utils.take_move_card(player_id,game_id)
-                player_utils.drawn_figure_card(player_id)
+                take_move_card(player_id,game_id)
+                drawn_figure_card(player_id)
     else:
         raise ValueError("Game is not in waiting state")
   
 def delete_all():
     repo.tear_down()
-    

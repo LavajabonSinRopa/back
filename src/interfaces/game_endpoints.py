@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException, Response
 from entities.game.game_utils import (add_game, get_games, get_game_by_id, 
                                       add_to_game, remove_player_from_game, pass_turn,
                                       start_game_by_id,get_game_status,get_games_with_player_names)
+
 from entities.player.player_utils import add_player
 from schemas.game_schemas import (CreateGameRequest, CreateGameResponse, 
                                   SkipTurnRequest, JoinGameRequest, JoinGameResponse,
@@ -28,7 +29,7 @@ async def create_game(request: CreateGameRequest):
     game_socket_manager.join_player_to_game_map(game_id,creator_id)
     
     #TODO: send only data of games in "waiting"
-    await public_manager.broadcast({"type":"CreatedGames","payload": get_games_with_player_names()})
+    await public_manager.broadcast({"type":"CreatedGames","payload": get_games()})
     
     return CreateGameResponse(game_id=game_id, player_id=creator_id)
 
@@ -52,8 +53,8 @@ async def join_game(game_id: str, request: JoinGameRequest):
     add_to_game(player_id=player_id, game_id=game_id)
     game_socket_manager.join_player_to_game_map(game_id,player_id)
 
-    #Avisar a los sockets de la partida sobre la union.
-    await game_socket_manager.broadcast_game(game_id,{"type":"PlayerJoined","payload": request.player_name})
+    # Avisar a los sockets de la partida sobre el jugador que se une.
+    await game_socket_manager.broadcast_game(game_id,{"type":"PlayerJoined","payload": {'player_id' : player_id, 'player_name': request.player_name}})
     
     #Actualizar la cantidad de jugadores a los que buscan partida.
     await public_manager.broadcast({"type":"CreatedGames","payload": get_games_with_player_names()})
@@ -76,11 +77,15 @@ async def leave_game(game_id: str, request: LeaveGameRequest):
     # Eliminar jugador
     try:
         remove_player_from_game(game_id=game_id, player_id=request.player_id)
-    except NoResultFound:
+    except:
         raise HTTPException(status_code=404, detail="Player does not exist in the game")
     
+    # Get name of the player
+    player_name = game['player_names'][game['players'].index(request.player_id)]
+    
     # Avisar a los sockets de la partida sobre el jugador que abandona.
-    await game_socket_manager.broadcast_game(game_id,{"type":"PlayerLeft","payload": request.player_id})
+
+    await game_socket_manager.broadcast_game(game_id,{"type":"PlayerLeft","payload": {'player_id' : request.player_id, 'player_name': player_name}})
     
     #Actualizar la cantidad de jugadores a los que buscan partida.
     await public_manager.broadcast({"type":"CreatedGames","payload": get_games_with_player_names()})
@@ -104,6 +109,8 @@ async def skip_turn(game_id: str, request: SkipTurnRequest):
     else:
         raise HTTPException(status_code=418, detail="Not your turn")
     
+    #TODO: avisar a los otros juagdores que el turno fue salteado
+    
 @router.get("")
 def get_all_games():
     """Endpoint to request all games"""
@@ -111,7 +118,7 @@ def get_all_games():
     return games
 
 @router.get("/{game_id}")
-async def leave_game(game_id: str):
+async def get_game(game_id: str):
     """Get data for a specific game."""
     try:
         game = get_game_by_id(game_id)
@@ -129,7 +136,6 @@ async def start_game(game_id: str, request: LeaveGameRequest):
         raise HTTPException(status_code=404, detail="Invalid game ID")
     
     # Verificar si el jugador es el creador del juego
-    print("GAME CREATOR IS ", game["creator"])
     if game["creator"] != request.player_id:
         raise HTTPException(status_code=403, detail="Solo el creador puede iniciar la partida")
     

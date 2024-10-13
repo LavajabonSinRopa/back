@@ -49,6 +49,7 @@ class gameRepository:
                 "turn": game.turn,
                 "creator": game.creator,
                 "players": [player.unique_id for player in game.players],
+                "player_names": [player.name for player in game.players],
                 "board": gameRepository.get_board(game_id)
             }
         except NoResultFound:
@@ -86,7 +87,8 @@ class gameRepository:
                     "state": game.state,
                     "turn": game.turn,
                     "creator": game.creator,
-                    "players": [player.unique_id for player in game.players]
+                    "players": [player.unique_id for player in game.players],
+                    "player_names": [player.name for player in game.players]
                 }
                 for game in games
             ]
