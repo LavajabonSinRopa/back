@@ -71,7 +71,7 @@ async def leave_game(game_id: str, request: LeaveGameRequest):
         raise HTTPException(status_code=404, detail="Invalid game ID")
     
     # Verificar si el jugador es el creador del juego
-    if game["creator"] == request.player_id:
+    if game["creator"] == request.player_id and game["state"] == "waiting":
         raise HTTPException(status_code=403, detail="El creador del juego no puede abandonar la partida")
     
     # Eliminar jugador
