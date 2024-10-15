@@ -8,9 +8,9 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 's
 
 from entities.game.game_utils import add_game,get_games, pass_turn, add_to_game, start_game_by_id, remove_player_from_game, get_players_names
 
-games = {'Game 1': {'unique_id': '1', 'creator': 'ME', 'state': 'waiting', 'players': ['ME', 'p2'], 'player_names': ['MYNAME', 'p2NAME']}, 
-         'Game 2': {'unique_id': '2', 'creator': 'also ME', 'state': 'started', 'players': ['also ME', 'p2'], 'turn': 0},
-         'Game 3': {'unique_id': '3', 'creator': 'also also ME', 'state': 'waiting', 'players': ['also also ME', 'p2', 'p3', 'p3']}}
+games = [{'unique_id': '1', 'creator': 'ME', 'state': 'waiting', 'players': ['ME', 'p2'], 'player_names': ['MYNAME', 'p2NAME']}, 
+         {'unique_id': '2', 'creator': 'also ME', 'state': 'started', 'players': ['also ME', 'p2'], 'turn': 0},
+         {'unique_id': '3', 'creator': 'also also ME', 'state': 'waiting', 'players': ['also also ME', 'p2', 'p3', 'p3']}]
 
 # FUNCTIONS THAT WILL BE PATCHED
 @pytest.fixture
@@ -36,21 +36,24 @@ def test_add_game_success(mock_repo):
 
 def test_get_games(mock_repo):
     mock_repo.get_games.return_value = games
-    assert get_games() == games
+    games_gotten = get_games()
+    assert games[0] in games_gotten
+    assert games[1] not in games_gotten
+    assert games[2] in games_gotten
     mock_repo.get_games.assert_called_once()
 
 def test_add_to_game(mock_repo):
-    mock_repo.get_game.return_value = games['Game 1']
+    mock_repo.get_game.return_value = games[0]
     add_to_game(player_id = '9', game_id = '1')
     mock_repo.add_player_to_game.assert_called_once()
 
 def test_add_to_game_started(mock_repo):
-    mock_repo.get_game.return_value = games['Game 2']
+    mock_repo.get_game.return_value = games[1]
     assert -1 == add_to_game(player_id = '9', game_id = '1')
     mock_repo.add_player_to_game.assert_not_called()
 
 def test_add_to_game_too_many_players(mock_repo):
-    mock_repo.get_game.return_value = games['Game 3']
+    mock_repo.get_game.return_value = games[2]
     assert -1 == add_to_game(player_id = '9', game_id = '1')
     mock_repo.add_player_to_game.assert_not_called()
 
@@ -59,34 +62,34 @@ def test_remove_player_from_game(mock_repo):
     mock_repo.remove_player_from_game.assert_called_once()
 
 def test_get_players_names(mock_repo):
-    mock_repo.get_game.return_value = games['Game 1']
-    assert get_players_names(game_id = 'A') == games['Game 1']['player_names']
+    mock_repo.get_game.return_value = games[0]
+    assert get_players_names(game_id = 'A') == games[0]['player_names']
     mock_repo.get_game.assert_called_once
 
 def test_pass_turn_success(mock_repo):
-    mock_repo.get_game.return_value = games['Game 2']
+    mock_repo.get_game.return_value = games[1]
     assert pass_turn(game_id = 'Game 2', player_id = 'also ME')
     mock_repo.pass_turn.assert_called_once_with(game_id = 'Game 2')
 
 def test_pass_turn_not_in_game(mock_repo):
-    mock_repo.get_game.return_value = games['Game 2']
+    mock_repo.get_game.return_value = games[1]
     assert not pass_turn(game_id = 'Game 2', player_id = 'NOT ME')
     mock_repo.pass_turn.assert_not_called()
 
 def test_pass_turn_not_my_turn(mock_repo):
-    mock_repo.get_game.return_value = games['Game 2']
+    mock_repo.get_game.return_value = games[1]
     assert not pass_turn(game_id = 'Game 2', player_id = 'p2')
     mock_repo.pass_turn.assert_not_called()
 
 def test_start_game_by_id(mock_repo, mock_take_move_card, mock_take_figure_card):
-    mock_repo.get_game.return_value = games['Game 1']
+    mock_repo.get_game.return_value = games[0]
     start_game_by_id('Game 1')
     mock_repo.edit_game_state.assert_called_once_with('Game 1', 'started')
     mock_take_move_card.assert_called()
     mock_take_figure_card.assert_called()
 
 def test_start_game_by_id_failure(mock_repo, mock_take_move_card, mock_take_figure_card):
-    mock_repo.get_game.return_value = games['Game 2']
+    mock_repo.get_game.return_value = games[1]
     try:
         start_game_by_id('Game 2')
     except:

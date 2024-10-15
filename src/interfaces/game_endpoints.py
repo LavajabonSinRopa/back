@@ -82,12 +82,14 @@ async def leave_game(game_id: str, request: LeaveGameRequest):
     
     # Get name of the player
     player_name = game['player_names'][game['players'].index(request.player_id)]
-    
+
     # Avisar a los sockets de la partida sobre el jugador que abandona.
     await game_socket_manager.broadcast_game(game_id,{"type":"PlayerLeft","payload": {'player_id' : request.player_id, 'player_name': player_name}})
     
-    if len(game['players']) - 1 <= 1:
-        await game_socket_manager.broadcast_game(game_id,{"type":"GameWon","payload": 'CONGRATULATIONS'})
+    game = get_game_by_id(game_id)
+
+    if len(game['players']) <= 1:
+        await game_socket_manager.broadcast_game(game_id,{"type":"GameWon","payload": {'player_id' : game['players'][0], 'player_name': game['player_names'][0]}})
         
     #Actualizar la cantidad de jugadores a los que buscan partida.
     await public_manager.broadcast({"type":"CreatedGames","payload": get_games_with_player_names()})

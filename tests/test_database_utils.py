@@ -1,6 +1,11 @@
 import unittest
 import uuid
-from src.entities.db.gamesRepo import repo
+import sys
+import os
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
+
+from entities.db.gamesRepo import repo
 
 NofGames = 10
 NofPlayers = NofGames*2
@@ -35,13 +40,13 @@ class test_games_Repo(unittest.TestCase):
         pid,gid = str(uuid.uuid4()),str(uuid.uuid4())
         repo.create_player(name="MESSI",unique_id=pid)
         repo.create_game(unique_id=gid,name = "FUNALDELMUNDIAL",state="waiting",creator_id=pid)
-        repo.create_card(card_type=2,card_kind='figure',player_id=pid,game_id=gid,state='not drawn')
+        repo.create_card(card_type=2,card_kind='figure',player_id=pid,game_id=gid,state='drawn')
         repo.create_card(card_type=4,card_kind='movement',player_id=pid,game_id=gid)
         player = repo.get_player(pid)
         assert len(player['figure_cards']) == 1
         assert len(player['movement_cards']) == 1
         assert player['movement_cards'][0] == 4
-        assert player['figure_cards'][0]['state'] == 'not drawn'
+        assert player['figure_cards'][0]['state'] == 'drawn'
         assert player['figure_cards'][0]['type'] == 2
     
     def test_pass_turn(self):
@@ -76,7 +81,6 @@ class test_games_Repo(unittest.TestCase):
         repo.create_game(unique_id=gid,name = "FUNALDELMUNDIAL",state="started",creator_id=pid)
         repo.add_player_to_game(player_id=pid,game_id=gid)
         repo.create_card(card_type=2,card_kind='figure',player_id=pid,game_id=gid,state="not drawn")
-        assert repo.get_player(pid)['figure_cards'][0]['state'] == "not drawn"
         repo.drawn_figure_card(player_id=pid)
         assert repo.get_player(pid)['figure_cards'][0]['state'] == "drawn"
         
