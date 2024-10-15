@@ -44,13 +44,13 @@ class gameRepository:
             game = session.query(Game).filter_by(unique_id=game_id).one()
             return {
                 "unique_id": game.unique_id,
-                "name": game.name,
+                "name": game.name,  
                 "state": game.state,
-                "board": game.board,
                 "turn": game.turn,
                 "creator": game.creator,
                 "players": [player.unique_id for player in game.players],
-                "player_names": [player.name for player in game.players]
+                "player_names": [player.name for player in game.players],
+                "board": gameRepository.get_board(game_id)
             }
         except NoResultFound:
             raise ValueError("Game_model does not exist")
@@ -85,7 +85,6 @@ class gameRepository:
                     "unique_id": game.unique_id,
                     "name": game.name,
                     "state": game.state,
-                    "board": game.board,
                     "turn": game.turn,
                     "creator": game.creator,
                     "players": [player.unique_id for player in game.players],
@@ -104,6 +103,9 @@ class gameRepository:
             session.query(Player).delete()
             # Delete all entries from the Games table
             session.query(Game).delete()
+            # Deleete all entries from the Cards table
+            session.query(Figure_card).delete()
+            session.query(Movement_card).delete()
             # Commit the changes
             session.commit()
         except Exception as e:
@@ -303,5 +305,92 @@ class gameRepository:
             print(f"Error drawing figure card: {e}")
         finally:
             session.close()
-
+    
+    @staticmethod
+    def create_board(game_id: str):
+        session = Session()
+        game = session.query(Game).filter_by(unique_id=game_id).one_or_none()
+        
+        colors = ['red', 'green', 'blue', 'yellow']
+        
+        color_pool = colors * 9 
+        random.shuffle(color_pool)
+        try:
+            if game is None:
+                raise ValueError(f"No game found with ID: {game_id}")
+            
+            board_colors = []
+            for _ in range(6):
+                for _ in range(6):
+                    color = color_pool.pop()
+                    board_colors.append(color)
+            board_string = ' '.join(board_colors)
+            game.board = board_string      
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            print(f"Error creating board: {e}")
+        finally:
+            session.close()
+            
+    @staticmethod
+    def get_board(game_id:str) -> List[List[str]]:
+        """
+        Return the board matrix for a game.
+        :param game_id: The unique ID of the game.
+        
+        board_matrix: A 6x6 matrix representing the board. Each cell contains string color. (red, green, blue, yellow)
+        
+        board_matrix[y][x] represents the color of the cell at position (x, y).
+        """
+        session = Session()
+        
+        board_matrix = None
+        try:
+            game = session.query(Game).filter_by(unique_id=game_id).one_or_none()
+            if game is None:
+                raise ValueError(f"No game found with ID: {game_id}")
+            
+            if game.board is not None:
+                board_string = game.board
+                board_list = board_string.split(' ')
+            
+                board_matrix = [[None for _ in range(6)] for _ in range(6)]
+                for y in range(6):
+                    for x in range(6):
+                        board_matrix[y][x] = board_list.pop(0)
+            return board_matrix
+        except Exception as e:
+            print(f"Error getting board: {e}")
+        finally:
+            session.close()
+    
+    @staticmethod
+    def swap_positions_board(game_id: str, x1: int, y1: int, x2: int, y2: int):
+        session = Session()
+        try:
+            if x1 < 0 or x1 > 5 or y1 < 0 or y1 > 5 or x2 < 0 or x2 > 5 or y2 < 0 or y2 > 5:
+                raise ValueError("Invalid coordinates")
+            
+            game = session.query(Game).filter_by(unique_id=game_id).one_or_none()
+            if game is None:
+                raise ValueError(f"No game found with ID: {game_id}")
+            if game.state != 'started':
+                raise ValueError("Game is not started")
+            
+            board_list = game.board.split(' ')
+            index1 = y1 * 6 + x1
+            index2 = y2 * 6 + x2
+            temp_color = board_list[index1]
+            board_list[index1] = board_list[index2]
+            board_list[index2] = temp_color
+            board_string = ' '.join(board_list)
+            game.board = board_string            
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            print(f"Error swapping positions in board: {e}")
+        finally:
+            session.close()
+            
 repo = gameRepository()

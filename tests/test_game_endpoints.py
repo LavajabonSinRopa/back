@@ -189,7 +189,7 @@ def test_leave_game_creator(mock_get_game_by_id, mock_remove_player_from_game, m
 
     assert response.status_code == 403
     mock_get_game_by_id.assert_called_once_with("Test_Game")
-    mock_remove_player_from_game.not_called
+    mock_remove_player_from_game.assert_not_called
 
 def test_leave_game_no_game(mock_get_game_by_id, mock_remove_player_from_game, mock_game_socket_manager):
     
@@ -217,7 +217,7 @@ def test_leave_game_not_in_game(mock_get_game_by_id, mock_remove_player_from_gam
 
     assert response.status_code != 200
     mock_get_game_by_id.assert_called_once_with("Test_Game")
-    mock_remove_player_from_game.not_called
+    mock_remove_player_from_game.assert_not_called
 
 def test_skip_turn_success(mock_pass_turn):
     mock_pass_turn.return_value = True
@@ -252,5 +252,6 @@ def test_get_all_games(mock_get_games):
     response = client.get("/games")
     assert response.status_code == 200
 
-
+if __name__ == "__main__":
+    pytest.main()
 

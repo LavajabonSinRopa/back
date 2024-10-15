@@ -27,17 +27,17 @@ class Game(Base):
     name = Column(String, nullable=False)
     # "waiting", "started", "finished"
     state = Column(String, nullable=False)
-    board = Column(String)
     # amount of turns that have passed. player[turn%len(players)] is to play
     turn = Column(Integer)
     creator = Column(String, ForeignKey('Players.unique_id'))
     players = relationship('Player', secondary=game_player_association, back_populates='games')
+    board = Column(String)
 
 class Figure_card(Base):
     __tablename__ = 'Figure_cards'
     unique_id = Column(String, primary_key=True)  # Ensure a primary key exists
     card_type = Column(Integer)
-    state = Column(String, nullable=False)  # 'Drawn', 'Not drawn', 'Blocked'
+    state = Column(String, nullable=False)  # 'drawn', 'not drawn', 'blocked'
     game_id = Column(String, ForeignKey('Games.unique_id'))
     player_id = Column(String, ForeignKey('Players.unique_id'))
 

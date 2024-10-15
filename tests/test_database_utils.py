@@ -7,7 +7,7 @@ NofPlayers = NofGames*2
 
 #WRITES TO DB
 class test_games_Repo(unittest.TestCase):
-    def test_tear_down(self):
+    def tearDown(self):
         repo.tear_down()
         assert len(repo.get_games()) == 0
     
@@ -79,6 +79,36 @@ class test_games_Repo(unittest.TestCase):
         assert repo.get_player(pid)['figure_cards'][0]['state'] == "not drawn"
         repo.drawn_figure_card(player_id=pid)
         assert repo.get_player(pid)['figure_cards'][0]['state'] == "drawn"
+        
+    def test_create_board(self):
+        pid = str(uuid.uuid4())
+        gid = str(uuid.uuid4())
+        repo.create_player(name="MESSI",unique_id=pid)
+        repo.create_game(unique_id=gid,name = "FUNALDELMUNDIAL",state="started",creator_id=pid)
+        repo.add_player_to_game(player_id=pid,game_id=gid)
 
+        repo.create_board(game_id=gid)
+        assert len(repo.get_board(game_id=gid)) == 6 
+        for x_coordinate in range(6):
+            assert len(repo.get_board(game_id=gid)[x_coordinate]) == 6
+    
+    def test_swap_positions(self):
+        pid1 = str(uuid.uuid4())
+        gid = str(uuid.uuid4())
+        repo.create_player(name="MESSI",unique_id=pid1)
+        repo.create_game(unique_id=gid,name = "FUNALDELMUNDIAL",state="started",creator_id=pid1)
+        repo.add_player_to_game(player_id=pid1,game_id=gid)
+        repo.create_board(game_id=gid)
+        color1 = repo.get_board(game_id=gid)[0][0]
+        color2 = repo.get_board(game_id=gid)[1][0]
+        color3 = repo.get_board(game_id=gid)[2][4]
+        color4 = repo.get_board(game_id=gid)[2][5]
+        repo.swap_positions_board(game_id=gid,x1=0,y1=0,x2=0,y2=1)
+        repo.swap_positions_board(game_id=gid,x1=4,y1=2,x2=5,y2=2)
+        assert repo.get_board(game_id=gid)[0][0] == color2
+        assert repo.get_board(game_id=gid)[1][0] == color1
+        assert repo.get_board(game_id=gid)[2][4] == color4
+        assert repo.get_board(game_id=gid)[2][5] == color3
+        
 if __name__ == "__main__":
     unittest.main()

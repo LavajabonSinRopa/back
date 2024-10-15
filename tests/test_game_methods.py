@@ -96,6 +96,6 @@ def test_start_game_by_id_failure(mock_repo, mock_take_move_card, mock_take_figu
         mock_repo.edit_game_state.assert_not_called()
         mock_take_move_card.assert_not_called()
         mock_take_figure_card.assert_not_called()
-
+        
 if __name__ == "__main__":
     unittest.main()
