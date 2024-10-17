@@ -11,7 +11,9 @@ def add_game(game_name, creator_id):
     return new_game_id
     
 def get_games():
-    return repo.get_games()
+    games = repo.get_games()
+    games_waiting = [game for game in games if game['state'] == 'waiting'] 
+    return games_waiting
 
 def get_game_by_id(game_id):
     """
@@ -70,8 +72,6 @@ def get_games_with_player_names():
             }
             for game in games
         ]
-  
-
 
 def add_to_game(player_id,game_id):
     try:
@@ -154,7 +154,6 @@ def get_move_deck(game_id):
     return repo.get_move_deck(game_id)
 
 def start_game_by_id(game_id):
-    #TODO initialize game board
     game = get_game_by_id(game_id)
     if game["state"] == "waiting":
         repo.edit_game_state(game_id,"started")

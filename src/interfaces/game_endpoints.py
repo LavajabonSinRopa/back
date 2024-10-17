@@ -82,11 +82,15 @@ async def leave_game(game_id: str, request: LeaveGameRequest):
     
     # Get name of the player
     player_name = game['player_names'][game['players'].index(request.player_id)]
-    
-    # Avisar a los sockets de la partida sobre el jugador que abandona.
 
+    # Avisar a los sockets de la partida sobre el jugador que abandona.
     await game_socket_manager.broadcast_game(game_id,{"type":"PlayerLeft","payload": {'player_id' : request.player_id, 'player_name': player_name}})
     
+    game = get_game_by_id(game_id)
+
+    if len(game['players']) <= 1:
+        await game_socket_manager.broadcast_game(game_id,{"type":"GameWon","payload": {'player_id' : game['players'][0], 'player_name': game['player_names'][0]}})
+        
     #Actualizar la cantidad de jugadores a los que buscan partida.
     await public_manager.broadcast({"type":"CreatedGames","payload": get_games_with_player_names()})
 
@@ -102,14 +106,14 @@ async def skip_turn(game_id: str, request: SkipTurnRequest):
         raise HTTPException(status_code=404, detail="Invalid game ID")
 
     if(skipped):
-        # Devolver 200 OK sin data extra
-        return Response(status_code=200)
+        # Avisar a los demás jugadores del nuevo estado de la partida
+        await game_socket_manager.broadcast_game(game_id,{"type":"TurnSkipped","payload": get_game_status(game_id=game_id)})
     
+        return Response(status_code=200)
+
     #Si no pudo saltear
     else:
         raise HTTPException(status_code=418, detail="Not your turn")
-    
-    #TODO: avisar a los otros juagdores que el turno fue salteado
     
 @router.get("")
 def get_all_games():

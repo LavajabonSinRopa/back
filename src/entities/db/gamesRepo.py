@@ -67,7 +67,7 @@ class gameRepository:
             return {
                 "unique_id": player.unique_id,
                 "name": player.name,
-                "figure_cards": [{'type':fcard.card_type,'state':fcard.state} for fcard in player.figure_cards],
+                "figure_cards": [{'type': fcard.card_type, 'state': fcard.state} for fcard in player.figure_cards if fcard.state != 'not drawn'],
                 "movement_cards": [mcard.card_type for mcard in player.movement_cards]
             }
         except NoResultFound:
