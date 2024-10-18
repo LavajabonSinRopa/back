@@ -61,6 +61,20 @@ def mock_pass_turn():
     with patch('interfaces.game_endpoints.pass_turn') as mock:
         yield mock
 
+@pytest.fixture
+def mock_is_players_turn():
+    with patch('interfaces.game_endpoints.is_players_turn') as mock:
+        yield mock
+
+@pytest.fixture
+def mock_make_temp_movement():
+    with patch('interfaces.game_endpoints.make_temp_movement') as mock:
+        yield mock
+
+@pytest.fixture
+def mock_get_game_status():
+    with patch('interfaces.game_endpoints.get_game_status') as mock:
+        yield mock
 
 def test_create_game_success(mock_add_player, mock_add_game, mock_game_socket_manager, mock_get_games):
     # Arrange
@@ -219,8 +233,10 @@ def test_leave_game_not_in_game(mock_get_game_by_id, mock_remove_player_from_gam
     mock_get_game_by_id.assert_called_once_with("Test_Game")
     mock_remove_player_from_game.assert_not_called
 
-def test_skip_turn_success(mock_pass_turn):
+def test_skip_turn_success(mock_get_game_status, mock_pass_turn, mock_game_socket_manager):
     mock_pass_turn.return_value = True
+    mock_get_game_status.return_value = []
+    mock_game_socket_manager.broadcast_game = AsyncMock()
 
     request_data = {'player_id': 'Test_Player'}
     response = client.post("/games/Test_Game/skip", json=request_data)
@@ -252,6 +268,51 @@ def test_get_all_games(mock_get_games):
     response = client.get("/games")
     assert response.status_code == 200
 
+def test_make_temp_move_success(mock_is_players_turn, mock_make_temp_movement):
+    mock_is_players_turn.return_value = True
+    mock_make_temp_movement.return_value = True
+
+    request_data = {'player_id': 'Test_Player','card_id': '100', 'from_x': 1, 'from_y': 1, 'to_x': 1, 'to_y': 1}
+    response = client.post("/games/Test_Game/move", json=request_data)
+
+    assert response.status_code == 200
+    mock_is_players_turn.assert_called_once_with(player_id='Test_Player', game_id='Test_Game')
+    mock_make_temp_movement.assert_called_once_with(game_id='Test_Game', player_id='Test_Player', card_id='100', from_x=1, from_y=1, to_x=1, to_y=1)
+
+def test_make_temp_move_cant_find_game(mock_is_players_turn, mock_make_temp_movement):
+    mock_is_players_turn.side_effect = Exception("TEST")
+    mock_make_temp_movement.return_value = True
+
+    request_data = {'player_id': 'Test_Player','card_id': '100', 'from_x': 1, 'from_y': 1, 'to_x': 1, 'to_y': 1}
+    response = client.post("/games/Test_Game/move", json=request_data)
+
+    assert response.status_code == 404
+    mock_is_players_turn.assert_called_once_with(player_id='Test_Player', game_id='Test_Game')
+    mock_make_temp_movement.assert_not_called()
+
+def test_make_temp_move_not_their_turn(mock_is_players_turn, mock_make_temp_movement):
+    mock_is_players_turn.return_value = False
+    mock_make_temp_movement.return_value = True
+
+    request_data = {'player_id': 'Test_Player','card_id': '100', 'from_x': 1, 'from_y': 1, 'to_x': 1, 'to_y': 1}
+    response = client.post("/games/Test_Game/move", json=request_data)
+
+    assert response.status_code == 404
+    mock_is_players_turn.assert_called_once_with(player_id='Test_Player', game_id='Test_Game')
+    mock_make_temp_movement.assert_not_called()
+
+
+def test_make_temp_move_failure_to_make_move(mock_is_players_turn, mock_make_temp_movement):
+    mock_is_players_turn.return_value = True
+    mock_make_temp_movement.side_effect = Exception("TEST")
+
+    request_data = {'player_id': 'Test_Player','card_id': '100', 'from_x': 1, 'from_y': 1, 'to_x': 1, 'to_y': 1}
+    response = client.post("/games/Test_Game/move", json=request_data)
+
+    assert response.status_code == 403
+    mock_is_players_turn.assert_called_once_with(player_id='Test_Player', game_id='Test_Game')
+    mock_make_temp_movement.assert_called_once_with(game_id='Test_Game', player_id='Test_Player', card_id='100', from_x=1, from_y=1, to_x=1, to_y=1)
+
+
 if __name__ == "__main__":
     pytest.main()
-

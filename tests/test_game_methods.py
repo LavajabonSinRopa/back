@@ -6,11 +6,13 @@ import os
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 
-from entities.game.game_utils import add_game,get_games, pass_turn, add_to_game, start_game_by_id, remove_player_from_game, get_players_names
+from entities.game.game_utils import add_game,get_games, pass_turn, add_to_game, start_game_by_id, remove_player_from_game, get_players_names, make_temp_movement
 
 games = [{'unique_id': '1', 'creator': 'ME', 'state': 'waiting', 'players': ['ME', 'p2'], 'player_names': ['MYNAME', 'p2NAME']}, 
          {'unique_id': '2', 'creator': 'also ME', 'state': 'started', 'players': ['also ME', 'p2'], 'turn': 0},
-         {'unique_id': '3', 'creator': 'also also ME', 'state': 'waiting', 'players': ['also also ME', 'p2', 'p3', 'p3']}]
+         {'unique_id': '3', 'creator': 'also also ME', 'state': 'waiting', 'players': ['also also ME', 'p2', 'p3', 'p3']},
+         {'unique_id': 'adb7026d-cf96-4bac-937b-a8106e56f160', 'name': 'GAME3', 'state': 'started', 'board': [['red', 'red', 'yellow', 'blue', 'red', 'blue'], ['blue', 'green', 'green', 'yellow', 'blue', 'red'], ['blue', 'blue', 'yellow', 'yellow', 'yellow', 'green'], ['green', 'red', 'yellow', 'green', 'green', 'red'], ['yellow', 'blue', 'red', 'yellow', 'green', 'green'], ['red', 'blue', 'blue', 'green', 'red', 'yellow']], 'turn': 1, 'creator': 'fbe2bf36-dc11-470e-a61e-4774b4d4aa23', 'players': [{'unique_id': '67ab34c4-052f-4683-be84-5886f26b864e', 'name': 'EL', 'figure_cards': [{'type': 6, 'state': 'drawn'}, {'type': 6, 'state': 'drawn'}, {'type': 5, 'state': 'drawn'}], 'movement_cards': [{'type': 0, 'unique_id': '9277905e-b02b-4605-a0af-4ab509c9967e', 'state': None}, {'type': 0, 'unique_id': '3d7b9a1f-bbcd-4e56-938d-e4fe15e51ddb', 'state': None}, {'type': 0, 'unique_id': 'fc2c43d9-fd5e-4654-89b4-1911157eda28', 'state': None}]}, {'unique_id': 'fbe2bf36-dc11-470e-a61e-4774b4d4aa23', 'name': 'YO', 'figure_cards': [{'type': 3, 'state': 'drawn'}, {'type': 2, 'state': 'drawn'}, {'type': 2, 'state': 'drawn'}], 'movement_cards': [{'type': 0, 'unique_id': '7bf11638-26cd-45ce-8812-98810ba30776', 'state': None}, {'type': 0, 'unique_id': 'b4b20c32-1156-4ab1-9f80-bd57093e89e4', 'state': None}, {'type': 0, 'unique_id': 'd4e79bc8-e840-4ea3-9558-1baa681b4599', 'state': None}]}]}
+]
 
 # FUNCTIONS THAT WILL BE PATCHED
 @pytest.fixture
@@ -99,6 +101,69 @@ def test_start_game_by_id_failure(mock_repo, mock_take_move_card, mock_take_figu
         mock_repo.edit_game_state.assert_not_called()
         mock_take_move_card.assert_not_called()
         mock_take_figure_card.assert_not_called()
-        
+
+def test_make_temp_movement_success(mock_repo):
+    mock_repo.get_player.return_value = games[3]['players'][1]
+    mock_repo.add_movement.return_value = 0
+    player = games[3]['players'][1]
+    card = player['movement_cards'][0]
+    assert make_temp_movement(game_id = games[3]['unique_id'], player_id = player['unique_id'], card_id = card['unique_id'], from_x = 0, from_y = 0, to_x = 2, to_y = 2)
+    mock_repo.get_player.assert_called_once_with(player_id = player['unique_id'])
+    mock_repo.add_movement.assert_called_once_with(from_x=0, from_y=0, to_x=2, to_y=2, card_id=card['unique_id'])
+    mock_repo.swap_positions_board.assert_called_once_with(game_id=games[3]['unique_id'], x1=0, y1=0, x2=2, y2=2)
+
+def test_make_temp_movement_failure_on_getting_player(mock_repo):
+    mock_repo.get_player.side_effect = Exception("TEST")
+    player = games[3]['players'][1]
+    card = player['movement_cards'][0]
+    try: 
+        make_temp_movement(game_id = games[3]['unique_id'],player_id = player['unique_id'], card_id = card['unique_id'], from_x = 0, from_y = 0, to_x = 2, to_y = 2)
+        assert False
+    except:
+        pass
+    finally:
+        mock_repo.get_player.assert_called_once_with(player_id = player['unique_id'])
+        mock_repo.add_movement.assert_not_called()
+        mock_repo.swap_positions_board.assert_not_called()
+
+def test_make_temp_movement_failure_on_movement(mock_repo):
+    mock_repo.add_movement.side_effect = Exception("TEST")
+    player = games[3]['players'][1]
+    card = player['movement_cards'][0]
+    try: 
+        make_temp_movement(game_id = games[3]['unique_id'],player_id = player['unique_id'], card_id = card['unique_id'], from_x = 0, from_y = 0, to_x = 2, to_y = 2)
+        assert False
+    except:
+        pass
+    finally:
+        mock_repo.get_player.assert_called_once_with(player_id = player['unique_id'])
+        mock_repo.add_movement.assert_not_called()
+        mock_repo.swap_positions_board.assert_not_called()
+
+def test_make_temp_movement_cant_move(mock_repo):
+    mock_repo.get_player.return_value = games[3]['players'][1]
+    mock_repo.add_movement.return_value = 0
+    player = games[3]['players'][1]
+    card = player['movement_cards'][0]
+    assert not make_temp_movement(game_id = games[3]['unique_id'], player_id = player['unique_id'], card_id = card['unique_id'], from_x = 0, from_y = 0, to_x = 4, to_y = 2)
+    mock_repo.get_player.assert_called_once_with(player_id = player['unique_id'])
+    mock_repo.add_movement.assert_not_called()
+    mock_repo.swap_positions_board.assert_not_called()
+
+def test_make_temp_movement_outside_board(mock_repo):
+    mock_repo.get_player.return_value = games[3]['players'][1]
+    mock_repo.add_movement.return_value = 0
+    player = games[3]['players'][1]
+    card = player['movement_cards'][0]
+    try:
+        assert not make_temp_movement(game_id = games[3]['unique_id'], player_id = player['unique_id'], card_id = card['unique_id'], from_x = 0, from_y = 0, to_x = -4, to_y = 2)
+        assert False
+    except:
+        pass    
+    finally:
+        mock_repo.get_player.assert_not_called()
+        mock_repo.add_movement.assert_not_called()
+        mock_repo.swap_positions_board.assert_not_called()
+
 if __name__ == "__main__":
     unittest.main()

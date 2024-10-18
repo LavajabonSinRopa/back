@@ -45,7 +45,7 @@ class test_games_Repo(unittest.TestCase):
         player = repo.get_player(pid)
         assert len(player['figure_cards']) == 1
         assert len(player['movement_cards']) == 1
-        assert player['movement_cards'][0] == 4
+        assert player['movement_cards'][0]['type'] == 4
         assert player['figure_cards'][0]['state'] == 'drawn'
         assert player['figure_cards'][0]['type'] == 2
     
@@ -113,6 +113,27 @@ class test_games_Repo(unittest.TestCase):
         assert repo.get_board(game_id=gid)[1][0] == color1
         assert repo.get_board(game_id=gid)[2][4] == color4
         assert repo.get_board(game_id=gid)[2][5] == color3
+
+    def test_add_movement(self):
+        # set up player with a card 
+        repo.tear_down()
+        pid = str(uuid.uuid4())
+        gid = str(uuid.uuid4())
+        repo.create_player(name="MESSI",unique_id=pid)
+        repo.create_game(unique_id=gid,name = "FUNALDELMUNDIAL",state="started",creator_id=pid)
+        repo.add_player_to_game(player_id=pid,game_id=gid)
+        card_id = repo.create_card(card_type=4,card_kind='movement',player_id=None,game_id=gid)['card_id']
+        repo.take_move_card(pid,gid)
+        
+        assert len(repo.get_player_movements(player_id = pid)) == 0
+
+        repo.add_movement(card_id = card_id, from_x = 0, from_y = 0, to_x = 5, to_y = 5)
+
+        assert len(repo.get_player_movements(player_id = pid)) == 1
+        move = repo.get_player_movements(player_id = pid)[0]
+        assert move['from_x'] == 0 and move['from_y'] == 0 and move['to_x'] == 5 and move['to_y'] == 5
+
         
 if __name__ == "__main__":
     unittest.main()
+    repo.tear_down()

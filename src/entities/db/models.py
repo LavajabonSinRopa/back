@@ -20,6 +20,9 @@ class Player(Base):
     games = relationship('Game', secondary=game_player_association, back_populates='players')
     figure_cards = relationship('Figure_card', back_populates='player', cascade="all, delete-orphan")
     movement_cards = relationship('Movement_card', back_populates='player', cascade="all, delete-orphan")
+    movements = relationship('Movement', back_populates='player', cascade="all, delete-orphan")
+
+#Player.movements Ensure that referencing columns are associated with a ForeignKey or ForeignKeyConstraint, or specify a 'primaryjoin' expression.
 
 class Game(Base):
     __tablename__ = 'Games'
@@ -48,11 +51,27 @@ class Movement_card(Base):
     __tablename__ = 'Movement_cards'
     unique_id = Column(String, primary_key=True)  # Ensure a primary key exists
     card_type = Column(Integer)
+    state = Column(String)  # 'not blocked', 'blocked'
+    
     game_id = Column(String, ForeignKey('Games.unique_id'))
     player_id = Column(String, ForeignKey('Players.unique_id'))
 
     player = relationship('Player', back_populates='movement_cards')
     game = relationship('Game')
+
+class Movement(Base):
+    __tablename__ = 'Movements'
+    unique_id = Column(String, primary_key=True)  # Ensure a primary key exists
+    from_x = Column(Integer, nullable=False)
+    from_y = Column(Integer, nullable=False)
+    to_x = Column(Integer, nullable=False)
+    to_y = Column(Integer, nullable=False)
+    move_number = Column(Integer, nullable=False)
+    player_id = Column(String, ForeignKey('Players.unique_id'))
+    card_id = Column(String, ForeignKey('Movement_cards.unique_id'))
+    # move 0 is the first move that player has made
+    player = relationship('Player', back_populates='movements')
+    
 
 # Crea las tablas en la base de datos
 Base.metadata.create_all(engine)
