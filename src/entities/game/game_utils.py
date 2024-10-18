@@ -95,6 +95,13 @@ def remove_player_from_game(player_id, game_id):
 def get_players_names(game_id):
     return get_game_by_id(game_id=game_id)['player_names']
 
+def is_players_turn(game_id, player_id):
+    try:
+        game = get_game_by_id(game_id=game_id)
+    except Exception as e:
+        raise e
+    return game['players'][game['turn']%len(game['players'])]==player_id
+
 def pass_turn(game_id, player_id):
     """
     passes turn if it is player_id's turn and broadcasts to players in game if successful 
@@ -172,7 +179,7 @@ def is_in_board(x):
     #TODO make global variable for board size
     return x >= 0 and x <= 5
 
-def make_temp_movement(player_id, card_id, from_x, from_y, to_x, to_y):
+def make_temp_movement(game_id, player_id, card_id, from_x, from_y, to_x, to_y):
     # assumes that player is in game
     # check if player has a card of this type and movement can be made using card given
     # call repo.add_movement()
@@ -195,6 +202,7 @@ def make_temp_movement(player_id, card_id, from_x, from_y, to_x, to_y):
     
         if(can_move_to(from_x=from_x, from_y=from_y, to_x=to_x, to_y=to_y, card_type=card_type)):
             repo.add_movement(from_x=from_x, from_y=from_y, to_x=to_x, to_y=to_y, card_id=card_id)
+            repo.swap_positions_board(game_id=game_id, x1 = from_x, y1 = from_y, x2 = to_x, y2 = to_y)
             return True
         return False
     

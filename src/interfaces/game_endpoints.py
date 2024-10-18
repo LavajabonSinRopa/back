@@ -3,12 +3,12 @@
 from fastapi import APIRouter, HTTPException, Response
 from entities.game.game_utils import (add_game, get_games, get_game_by_id, 
                                       add_to_game, remove_player_from_game, pass_turn,
-                                      start_game_by_id,get_game_status,get_games_with_player_names)
+                                      start_game_by_id,get_game_status,is_players_turn,make_temp_movement)
 
 from entities.player.player_utils import add_player
 from schemas.game_schemas import (CreateGameRequest, CreateGameResponse, 
                                   SkipTurnRequest, JoinGameRequest, JoinGameResponse,
-                                  LeaveGameRequest)
+                                  LeaveGameRequest, MakeMoveRequest)
 from interfaces.SocketManagers import public_manager, game_socket_manager 
 from sqlalchemy.exc import NoResultFound
 
@@ -28,7 +28,6 @@ async def create_game(request: CreateGameRequest):
     game_socket_manager.create_game_map(game_id)
     game_socket_manager.join_player_to_game_map(game_id,creator_id)
     
-    #TODO: send only data of games in "waiting"
     await public_manager.broadcast({"type":"CreatedGames","payload": get_games()})
     
     return CreateGameResponse(game_id=game_id, player_id=creator_id)
@@ -57,7 +56,7 @@ async def join_game(game_id: str, request: JoinGameRequest):
     await game_socket_manager.broadcast_game(game_id,{"type":"PlayerJoined","payload": {'player_id' : player_id, 'player_name': request.player_name}})
     
     #Actualizar la cantidad de jugadores a los que buscan partida.
-    await public_manager.broadcast({"type":"CreatedGames","payload": get_games_with_player_names()})
+    await public_manager.broadcast({"type":"CreatedGames","payload": get_games()})
 
     # Devolver ID unico de jugador para la partida
     return JoinGameResponse(player_id=player_id)
@@ -85,14 +84,12 @@ async def leave_game(game_id: str, request: LeaveGameRequest):
 
     # Avisar a los sockets de la partida sobre el jugador que abandona.
     await game_socket_manager.broadcast_game(game_id,{"type":"PlayerLeft","payload": {'player_id' : request.player_id, 'player_name': player_name}})
-    
-    game = get_game_by_id(game_id)
 
-    if len(game['players']) <= 1:
+    if len(game['players']) - 1 <= 1:
         await game_socket_manager.broadcast_game(game_id,{"type":"GameWon","payload": {'player_id' : game['players'][0], 'player_name': game['player_names'][0]}})
         
     #Actualizar la cantidad de jugadores a los que buscan partida.
-    await public_manager.broadcast({"type":"CreatedGames","payload": get_games_with_player_names()})
+    await public_manager.broadcast({"type":"CreatedGames","payload": get_games()})
 
     # Devolver 200 OK sin data extra
     return Response(status_code=200)
@@ -108,7 +105,6 @@ async def skip_turn(game_id: str, request: SkipTurnRequest):
     if(skipped):
         # Avisar a los demás jugadores del nuevo estado de la partida
         await game_socket_manager.broadcast_game(game_id,{"type":"TurnSkipped","payload": get_game_status(game_id=game_id)})
-    
         return Response(status_code=200)
 
     #Si no pudo saltear
@@ -153,4 +149,24 @@ async def start_game(game_id: str, request: LeaveGameRequest):
     await game_socket_manager.broadcast_game(game_id,{"type":"GameStarted","payload": get_game_status(game_id)})
 
     # Devolver 200 OK sin data extra
+    return Response(status_code=200)
+
+
+@router.post("/{game_id}/move")
+async def start_game(game_id: str,request: MakeMoveRequest):
+    #fijarse si existe la partida y es el turno del jugador
+    try: 
+        if(not is_players_turn(player_id=request.player_id, game_id=game_id)):
+            raise HTTPException(status_code=403, detail="No es tu turno")
+    except:
+        raise HTTPException(status_code=404, detail="Invalid game ID")
+
+    #intentar hacer el movimiento
+    try:
+        moved = make_temp_movement(game_id=game_id,player_id=request.player_id, card_id=request.card_id, from_x=request.from_x, from_y=request.from_y, to_x=request.to_x, to_y=request.to_y)
+        if(not moved):
+            raise HTTPException(status_code=403, detail="Invalid Move")
+    except:
+        raise HTTPException(status_code=403, detail="Invalid Move")
+    
     return Response(status_code=200)
