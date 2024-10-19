@@ -46,3 +46,6 @@ class MakeMoveRequest(BaseModel):
     
 class UnmakeMoveRequest(BaseModel):
     player_id: str
+    
+class applyTempMovementsRequest(BaseModel):
+    player_id: str

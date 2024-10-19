@@ -3,12 +3,14 @@
 from fastapi import APIRouter, HTTPException, Response
 from entities.game.game_utils import (add_game, get_games, get_game_by_id, 
                                       add_to_game, remove_player_from_game, pass_turn,
-                                      start_game_by_id,get_game_status,is_players_turn,make_temp_movement)
+                                      start_game_by_id,get_game_status,is_players_turn,make_temp_movement,
+                                      remove_top_movement, apply_temp_movements)
 
 from entities.player.player_utils import add_player
 from schemas.game_schemas import (CreateGameRequest, CreateGameResponse, 
                                   SkipTurnRequest, JoinGameRequest, JoinGameResponse,
-                                  LeaveGameRequest, MakeMoveRequest)
+                                  LeaveGameRequest, MakeMoveRequest, UnmakeMoveRequest,
+                                  applyTempMovementsRequest)
 from interfaces.SocketManagers import public_manager, game_socket_manager 
 from sqlalchemy.exc import NoResultFound
 
@@ -174,3 +176,30 @@ async def make_move(game_id: str,request: MakeMoveRequest):
     await game_socket_manager.broadcast_game(game_id,{"type":"MovSuccess","payload": get_game_status(game_id)})
 
     return Response(status_code=200)
+
+
+@router.post("/{game_id}/unmove")
+async def unmake_move(game_id: str,request: UnmakeMoveRequest):
+    #fijarse si existe la partida y es el turno del jugador
+    try: 
+        if(not is_players_turn(player_id=request.player_id, game_id=game_id)):
+            raise HTTPException(status_code=403, detail="No es tu turno")
+    except:
+        raise HTTPException(status_code=404, detail="Invalid game ID")
+
+    try:
+        remove_top_movement(game_id=game_id,player_id=request.player_id)
+        await game_socket_manager.broadcast_game(game_id,{"type":"MoveUnMade","payload": get_game_status(game_id)})
+    except:
+        raise HTTPException(status_code=403, detail="Invalid Move")
+    return Response(status_code=200)
+
+@router.post("/{game_id}/apply")
+async def apply_moves(game_id: str,request: applyTempMovementsRequest):
+    try:
+        apply_temp_movements(game_id=game_id,player_id=request.player_id)
+        await game_socket_manager.broadcast_game(game_id,{"type":"MovesApplied","payload": get_game_status(game_id)})
+    except:
+        raise HTTPException(status_code=403, detail="Invalid Move")
+    return Response(status_code=200)
+        
