@@ -17,9 +17,26 @@ python3 src/main.py
 
 ### Cómo testear
 Los diferentes tests se encuentran modularizados en distintos archivos según la funcionalidad.
-En este ejemplo testeamos los endpoints en sí.
+
+Para correr todos los tests y ver reporte de coverage en la terminal:
 ```sh
-PYTHONPATH=$(pwd) python3 tests/test_game_endpoints.py 
+coverage run tests/run.py -v tests && coverage report -m
 ```
+
+Para correr todos los tests y ver reporte de coverage en pagina web:
+```sh
+coverage run tests/run.py -v tests && coverage html && open htmlcov/index.html
+```
+
+Para testear todo excepto WebSockets (no es necesario tener el back levantado):
+```sh
+coverage run tests/run.py -v tests -k "not test_websocket_game and not test_websocket_public" && coverage html && open htmlcov/index.html
+```
+
+Ahora bien, para testear sólo los relacionados a WebSockets (es necesario tener el back levantado):
+```sh
+coverage run tests/run.py -v tests -k "test_websocket_game or test_websocket_public" && coverage html && open htmlcov/index.html
+```
+
 Todos los archivos dentro de la carpeta `back/tests` corresponden a tests.
 Recordar que el servidor debe estar funcionando para poder realizarlos. 
