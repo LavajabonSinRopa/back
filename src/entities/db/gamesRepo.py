@@ -1,6 +1,6 @@
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import NoResultFound
-from .models import Game, Player, engine, Figure_card, Movement_card
+from .models import Game, Player, engine, Figure_card, Movement_card, Movement
 from typing import List
 import uuid
 import random
@@ -68,7 +68,7 @@ class gameRepository:
                 "unique_id": player.unique_id,
                 "name": player.name,
                 "figure_cards": [{'type': fcard.card_type, 'state': fcard.state} for fcard in player.figure_cards if fcard.state != 'not drawn'],
-                "movement_cards": [mcard.card_type for mcard in player.movement_cards]
+                "movement_cards": [{'type': mcard.card_type, 'unique_id': mcard.unique_id, 'state': mcard.state} for mcard in player.movement_cards]
             }
         except NoResultFound:
             raise ValueError("Game_model does not exist")
@@ -152,7 +152,7 @@ class gameRepository:
         try:
             
             player = session.query(Player).filter_by(unique_id=player_id).one_or_none()
-
+            
             # Instantiate the card based on the specified class
             if card_kind == 'figure':
                 card = Figure_card(unique_id=str(uuid.uuid4()), card_type=card_type, state=state, player_id=player_id, game_id=game_id)
@@ -169,7 +169,6 @@ class gameRepository:
             else:
                 raise ValueError("Invalid card class specified.")
             
-
             session.commit()
             return({"card_id" : card.unique_id,
                     "card_kind":card_kind,
@@ -393,4 +392,46 @@ class gameRepository:
         finally:
             session.close()
             
+    @staticmethod
+    def add_movement(card_id: str, from_x: int, from_y: int, to_x: int, to_y: int):
+        # open session
+        # encontrar el id del jugador a traves de la carta --> card_id && player_id
+        # fijarme cuantos movientos hay --> move_number
+        # crear movement
+        # meter en base de datos
+        # return numero de movimiento
+        session = Session()
+        try:
+            card = session.query(Movement_card).filter_by(unique_id=card_id).one()
+
+            if card.state == 'blocked':
+                raise Exception("Error CARD ALREADY USED")
+            player_id = card.player_id
+            player = session.query(Player).filter_by(unique_id=player_id).one()
+            move_number = len(player.movements)
+            move_id = str(uuid.uuid4)
+            if(move_number>=3):
+                raise Exception("Error TOO MANY MOVES")
+            new_movement = Movement(unique_id = move_id, player_id = player.unique_id, from_x = from_x, from_y = from_y, to_x = to_x, to_y = to_y, card_id = card_id, move_number = move_number)
+            player.movements.append(new_movement)
+            card.state = 'blocked'
+            session.commit()
+            return move_number
+        except Exception as e:
+            session.rollback()
+        finally:
+            session.close()
+
+    @staticmethod
+    def get_player_movements(player_id: str) -> dict:
+        session = Session()
+        try:
+            player = session.query(Player).filter_by(unique_id=player_id).one()
+            print(player.movements)
+            return [{'from_x' : m.from_x, 'from_y' : m.from_y, 'to_x' : m.to_x, 'to_y' : m.to_y} for m in player.movements]
+        except NoResultFound:
+            raise ValueError("Game_model does not exist")
+        finally:
+            session.close()
+
 repo = gameRepository()
