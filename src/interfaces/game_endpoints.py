@@ -153,7 +153,7 @@ async def start_game(game_id: str, request: LeaveGameRequest):
 
 
 @router.post("/{game_id}/move")
-async def start_game(game_id: str,request: MakeMoveRequest):
+async def make_move(game_id: str,request: MakeMoveRequest):
     #fijarse si existe la partida y es el turno del jugador
     try: 
         if(not is_players_turn(player_id=request.player_id, game_id=game_id)):
