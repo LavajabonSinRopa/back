@@ -46,7 +46,7 @@ def get_game_status(game_id):
         "unique_id": game['unique_id'],
         "name": game['name'],
         "state": game['state'],
-        "board": repo.get_board(game_id),
+        "board": highlight_figures(repo.get_board(game_id)),
         "turn": game['turn'],
         "creator": game['creator'],
         "players": get_players_status(game_id)
@@ -214,28 +214,31 @@ directions = [[0,1],[0,-1],[1,0],[-1,0]]
 
 def highlight_figures(board: list[list[str]]) -> list[list[str]]:
     n = len(board)
-    vis = [[False]*n]*n
+    vis = [[False]*n for _ in range(n)]
     for i in range(n):
         for j in range(n):
             if(vis[i][j]):
                 continue
             vis[i][j] = True
             processing = [[i,j]]
-            figure = []
+            figure = [[i,j]]
             color = board[i][j]
             while(len(processing)>0):
                 square = processing[-1]
                 processing.pop()
                 x,y = square[0],square[1]
-                figure.append([x,y])
                 for d in directions:
                     nx,ny = x + d[0], y + d[1]
+                    if not is_in_board(nx) or not is_in_board(ny):
+                        continue
                     if not vis[nx][ny] and board[nx][ny] == color:
                         vis[nx][ny] = True
                         processing.append([nx,ny])
+                        figure.append([nx,ny])
             if figure_matches(figure):
                 for square in figure:
-                    square = square.upper()
+                    board[square[0]][square[1]] = board[square[0]][square[1]].upper()
+    return board
 
 
 def delete_all():
