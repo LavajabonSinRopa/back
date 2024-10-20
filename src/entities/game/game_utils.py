@@ -3,6 +3,7 @@ from sqlalchemy.exc import NoResultFound
 import uuid
 from ..player.player_utils import drawn_figure_card, take_move_card
 from ..cards.movent_cards import can_move_to
+from ..cards.figure_cards import figure_matches
 
 
 def add_game(game_name, creator_id):
@@ -208,6 +209,34 @@ def make_temp_movement(game_id, player_id, card_id, from_x, from_y, to_x, to_y):
     
     except Exception as e:
         raise e
+
+directions = [[0,1],[0,-1],[1,0],[-1,0]]
+
+def highlight_figures(board: list[list[str]]) -> list[list[str]]:
+    n = len(board)
+    vis = [[False]*n]*n
+    for i in range(n):
+        for j in range(n):
+            if(vis[i][j]):
+                continue
+            vis[i][j] = True
+            processing = [[i,j]]
+            figure = []
+            color = board[i][j]
+            while(len(processing)>0):
+                square = processing[-1]
+                processing.pop()
+                x,y = square[0],square[1]
+                figure.append([x,y])
+                for d in directions:
+                    nx,ny = x + d[0], y + d[1]
+                    if not vis[nx][ny] and board[nx][ny] == color:
+                        vis[nx][ny] = True
+                        processing.append([nx,ny])
+            if figure_matches(figure):
+                for square in figure:
+                    square = square.upper()
+
 
 def delete_all():
     repo.tear_down()
