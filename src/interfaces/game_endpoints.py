@@ -169,4 +169,7 @@ async def make_move(game_id: str,request: MakeMoveRequest):
     except:
         raise HTTPException(status_code=403, detail="Invalid Move")
     
+    # Avisar a los sockets de la partida sobre el movimiento hecho
+    await game_socket_manager.broadcast_game(game_id,{"type":"MovSuccess","payload": get_game_status(game_id)})
+
     return Response(status_code=200)
