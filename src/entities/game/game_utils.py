@@ -26,7 +26,12 @@ def get_game_by_id(game_id):
     Returns:
         Game or None: The game object if found, otherwise None.
     """
-    return repo.get_game(game_id)
+    try:
+        game = repo.get_game(game_id)
+    except Exception as e:
+        raise e
+    
+    return game
 
 
 def get_players_status(game_id):
