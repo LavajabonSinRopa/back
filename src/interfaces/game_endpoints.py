@@ -3,12 +3,14 @@
 from fastapi import APIRouter, HTTPException, Response
 from entities.game.game_utils import (add_game, get_games, get_game_by_id, 
                                       add_to_game, remove_player_from_game, pass_turn,
-                                      start_game_by_id,get_game_status,is_players_turn,make_temp_movement)
+                                      start_game_by_id,get_game_status,is_players_turn,make_temp_movement,
+                                      remove_top_movement, apply_temp_movements)
 
 from entities.player.player_utils import add_player
 from schemas.game_schemas import (CreateGameRequest, CreateGameResponse, 
                                   SkipTurnRequest, JoinGameRequest, JoinGameResponse,
-                                  LeaveGameRequest, MakeMoveRequest)
+                                  LeaveGameRequest, MakeMoveRequest, UnmakeMoveRequest,
+                                  applyTempMovementsRequest)
 from interfaces.SocketManagers import public_manager, game_socket_manager 
 from sqlalchemy.exc import NoResultFound
 
@@ -85,11 +87,13 @@ async def leave_game(game_id: str, request: LeaveGameRequest):
     # Avisar a los sockets de la partida sobre el jugador que abandona.
     await game_socket_manager.broadcast_game(game_id,{"type":"PlayerLeft","payload": {'player_id' : request.player_id, 'player_name': player_name}})
 
-    if len(game['players']) - 1 <= 1:
+    game['players'].remove(request.player_id)
+    if len(game['players']) <= 1:
         await game_socket_manager.broadcast_game(game_id,{"type":"GameWon","payload": {'player_id' : game['players'][0], 'player_name': game['player_names'][0]}})
         
     #Actualizar la cantidad de jugadores a los que buscan partida.
-    await public_manager.broadcast({"type":"CreatedGames","payload": get_games()})
+    if(game['state']=='waiting'):
+        await public_manager.broadcast({"type":"CreatedGames","payload": get_games()})
 
     # Devolver 200 OK sin data extra
     return Response(status_code=200)
@@ -174,3 +178,32 @@ async def make_move(game_id: str,request: MakeMoveRequest):
     await game_socket_manager.broadcast_game(game_id,{"type":"MovSuccess","payload": get_game_status(game_id)})
 
     return Response(status_code=200)
+
+
+@router.post("/{game_id}/unmove")
+async def unmake_move(game_id: str,request: UnmakeMoveRequest):
+    #fijarse si existe la partida y es el turno del jugador
+    try: 
+        if(not is_players_turn(player_id=request.player_id, game_id=game_id)):
+            raise HTTPException(status_code=403, detail="No es tu turno")
+    except:
+        raise HTTPException(status_code=404, detail="Invalid game ID")
+
+    try:
+        remove_top_movement(game_id=game_id,player_id=request.player_id)
+        await game_socket_manager.broadcast_game(game_id,{"type":"MoveUnMade","payload": get_game_status(game_id)})
+    except:
+        raise HTTPException(status_code=403, detail="Invalid Move")
+    return Response(status_code=200)
+
+@router.post("/{game_id}/apply")
+async def apply_moves(game_id: str,request: applyTempMovementsRequest):
+    try:
+        if(not is_players_turn(player_id=request.player_id, game_id=game_id)):
+            raise HTTPException(status_code=403, detail="No es tu turno")
+        apply_temp_movements(game_id=game_id,player_id=request.player_id)
+        await game_socket_manager.broadcast_game(game_id,{"type":"MovesApplied","payload": get_game_status(game_id)})
+    except:
+        raise HTTPException(status_code=403, detail="Invalid Move")
+    return Response(status_code=200)
+        

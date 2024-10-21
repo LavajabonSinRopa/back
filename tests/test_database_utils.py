@@ -17,6 +17,9 @@ NofPlayers = NofGames*2
 
 #WRITES TO DB
 class test_games_Repo(unittest.TestCase):
+    def setUp(self):
+        repo.tear_down()
+        
     def tearDown(self):
         repo.tear_down()
         assert len(repo.get_games()) == 0
@@ -395,7 +398,6 @@ class test_games_Repo(unittest.TestCase):
 
     def test_add_movement(self):
         # set up player with a card 
-        repo.tear_down()
         pid = str(uuid.uuid4())
         gid = str(uuid.uuid4())
         repo.create_player(name="MESSI",unique_id=pid)
@@ -419,14 +421,44 @@ class test_games_Repo(unittest.TestCase):
         repo.add_movement(player_id = pid, card_id = card_id, from_x = 1, from_y = 0, to_x = 3, to_y = 3)
 
         assert len(repo.get_player_movements(player_id = pid)) == 2
-
-    @patch('entities.db.gamesRepo.Session')
+        
+    def test_remove_movement(self):
+        pid = str(uuid.uuid4())
+        gid = str(uuid.uuid4())
+        repo.create_player(name="MESSI",unique_id=pid)
+        repo.create_game(unique_id=gid,name = "FUNALDELMUNDIAL",state="started",creator_id=pid)
+        repo.add_player_to_game(player_id=pid,game_id=gid)
+        card_id = repo.create_card(card_type=4,card_kind='movement',player_id=None,game_id=gid)['card_id']
+        repo.take_move_card(pid,gid)
+        assert len(repo.get_player_movements(player_id = pid)) == 0
+        repo.add_movement(player_id=pid,card_id = card_id, from_x = 0, from_y = 0, to_x = 5, to_y = 5)
+        assert len(repo.get_player_movements(player_id = pid)) == 1
+        repo.remove_top_movement(player_id = pid)
+        assert len(repo.get_player_movements(player_id = pid)) == 0
+        
+    def test_apply_moves(self):
+        pid = str(uuid.uuid4())
+        gid = str(uuid.uuid4())
+        repo.create_player(name="MESSI",unique_id=pid)
+        repo.create_game(unique_id=gid,name = "FUNALDELMUNDIAL",state="started",creator_id=pid)
+        repo.add_player_to_game(player_id=pid,game_id=gid) 
+        card_id = repo.create_card(card_type=4,card_kind='movement',player_id=None,game_id=gid)['card_id']
+        repo.take_move_card(pid,gid)
+        repo.add_movement(player_id=pid,card_id = card_id, from_x = 0, from_y = 0, to_x = 5, to_y = 5)
+        assert len(repo.get_player_movements(player_id = pid)) == 1
+        assert(repo.get_card(card_id)['state'] == 'blocked')
+        assert(repo.get_card(card_id)['player_id'] == pid)
+        repo.apply_temp_movements(player_id = pid)
+        assert len(repo.get_player_movements(player_id = pid)) == 0   
+        assert(repo.get_card(card_id)['state'] == 'not drawn')
+        assert(repo.get_card(card_id)['player_id'] == None)
+        
+|    @patch('entitie|s.db.gamesRepo.Session')
     def test_get_player_movements_no_result(self, MockSession):
         mock_session = MagicMock()
         MockSession.return_value = mock_session
 
         player_id = str(uuid.uuid4())
-        
         mock_session.query.return_value.filter_by.return_value.one.side_effect = NoResultFound()
 
         with self.assertRaises(ValueError) as context:

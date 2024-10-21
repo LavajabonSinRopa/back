@@ -26,7 +26,12 @@ def get_game_by_id(game_id):
     Returns:
         Game or None: The game object if found, otherwise None.
     """
-    return repo.get_game(game_id)
+    try:
+        game = repo.get_game(game_id)
+    except Exception as e:
+        raise e
+    
+    return game
 
 
 def get_players_status(game_id):
@@ -118,14 +123,30 @@ def pass_turn(game_id, player_id):
     except Exception as e:
         raise e
     
-    if(player_id not in game['players']):
-        return False
-    
-    if(game['players'][game['turn']%len(game['players'])]!=player_id):
-        return False
-    
-    repo.pass_turn(game_id=game_id)
-    return True
+    try:
+
+        if(player_id not in game['players']):
+            return False
+
+        if(game['players'][game['turn']%len(game['players'])]!=player_id):
+            return False
+
+        movements = repo.get_player_movements(player_id=player_id)
+
+        for movement in movements:
+            remove_top_movement(game_id=game_id, player_id=player_id)
+
+        n = len(repo.get_player(player_id=player_id)['movement_cards'])
+        while n<3:
+            take_move_card(player_id,game_id)
+            n+=1
+
+        repo.pass_turn(game_id=game_id)
+
+        return True
+    except Exception as e:
+        print(e)
+        raise e
 
 def get_players_status(game_id):
     list_status = []
@@ -210,6 +231,7 @@ def make_temp_movement(game_id, player_id, card_id, from_x, from_y, to_x, to_y):
     except Exception as e:
         raise e
 
+
 directions = [[0,1],[0,-1],[1,0],[-1,0]]
 
 def highlight_figures(board: list[list[str]]) -> list[list[str]]:
@@ -239,6 +261,22 @@ def highlight_figures(board: list[list[str]]) -> list[list[str]]:
                 for square in figure:
                     board[square[0]][square[1]] = board[square[0]][square[1]].upper()
     return board
+
+
+def remove_top_movement(game_id, player_id):
+    
+    try:
+        game = repo.get_game(game_id)
+        movements = repo.get_player_movements(player_id=player_id)
+        if not movements:
+            raise Exception("403, player has no movements")
+        repo.swap_positions_board(game_id=game_id, x1 = movements[-1]['from_x'], y1 = movements[-1]['from_y'], x2 = movements[-1]['to_x'], y2 = movements[-1]['to_y'])
+        repo.remove_top_movement(player_id=player_id)
+    except Exception as e:
+        raise e
+    
+def apply_temp_movements(player_id):
+    repo.apply_temp_movements(player_id=player_id)
 
 
 def delete_all():
