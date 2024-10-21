@@ -123,23 +123,30 @@ def pass_turn(game_id, player_id):
     except Exception as e:
         raise e
     
-    if(player_id not in game['players']):
-        return False
-    
-    if(game['players'][game['turn']%len(game['players'])]!=player_id):
-        return False
-    
-    player = repo.get_player(player_id=player_id)
-    for movement in player['movements']:
-        remove_top_movement(game_id=game_id, player_id=player_id)
+    try:
 
-    n = len(player['movement_cards'])
-    while n<3:
-        take_move_card(player_id,game_id)
-        n+=1
-    
-    repo.pass_turn(game_id=game_id)
-    return True
+        if(player_id not in game['players']):
+            return False
+
+        if(game['players'][game['turn']%len(game['players'])]!=player_id):
+            return False
+
+        movements = repo.get_player_movements(player_id=player_id)
+
+        for movement in movements:
+            remove_top_movement(game_id=game_id, player_id=player_id)
+
+        n = len(repo.get_player(player_id=player_id)['movement_cards'])
+        while n<3:
+            take_move_card(player_id,game_id)
+            n+=1
+
+        repo.pass_turn(game_id=game_id)
+
+        return True
+    except Exception as e:
+        print(e)
+        raise e
 
 def get_players_status(game_id):
     list_status = []
