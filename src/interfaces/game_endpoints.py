@@ -197,6 +197,8 @@ async def unmake_move(game_id: str,request: UnmakeMoveRequest):
 @router.post("/{game_id}/apply")
 async def apply_moves(game_id: str,request: applyTempMovementsRequest):
     try:
+        if(not is_players_turn(player_id=request.player_id, game_id=game_id)):
+            raise HTTPException(status_code=403, detail="No es tu turno")
         apply_temp_movements(game_id=game_id,player_id=request.player_id)
         await game_socket_manager.broadcast_game(game_id,{"type":"MovesApplied","payload": get_game_status(game_id)})
     except:

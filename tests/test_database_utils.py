@@ -153,7 +153,7 @@ class test_games_Repo(unittest.TestCase):
         card_id = repo.create_card(card_type=4,card_kind='movement',player_id=None,game_id=gid)['card_id']
         repo.take_move_card(pid,gid)
         assert len(repo.get_player_movements(player_id = pid)) == 0
-        repo.add_movement(card_id = card_id, from_x = 0, from_y = 0, to_x = 5, to_y = 5)
+        repo.add_movement(player_id=pid,card_id = card_id, from_x = 0, from_y = 0, to_x = 5, to_y = 5)
         assert len(repo.get_player_movements(player_id = pid)) == 1
         repo.remove_top_movement(player_id = pid)
         assert len(repo.get_player_movements(player_id = pid)) == 0
@@ -166,7 +166,7 @@ class test_games_Repo(unittest.TestCase):
         repo.add_player_to_game(player_id=pid,game_id=gid) 
         card_id = repo.create_card(card_type=4,card_kind='movement',player_id=None,game_id=gid)['card_id']
         repo.take_move_card(pid,gid)
-        repo.add_movement(card_id = card_id, from_x = 0, from_y = 0, to_x = 5, to_y = 5)
+        repo.add_movement(player_id=pid,card_id = card_id, from_x = 0, from_y = 0, to_x = 5, to_y = 5)
         assert len(repo.get_player_movements(player_id = pid)) == 1
         assert(repo.get_card(card_id)['state'] == 'blocked')
         assert(repo.get_card(card_id)['player_id'] == pid)
