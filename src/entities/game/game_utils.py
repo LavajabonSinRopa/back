@@ -202,7 +202,7 @@ def make_temp_movement(game_id, player_id, card_id, from_x, from_y, to_x, to_y):
             raise Exception("403, player does not have THIS card")
     
         if(can_move_to(from_x=from_x, from_y=from_y, to_x=to_x, to_y=to_y, card_type=card_type)):
-            repo.add_movement(from_x=from_x, from_y=from_y, to_x=to_x, to_y=to_y, card_id=card_id)
+            repo.add_movement(player_id=player_id, from_x=from_x, from_y=from_y, to_x=to_x, to_y=to_y, card_id=card_id)
             repo.swap_positions_board(game_id=game_id, x1 = from_x, y1 = from_y, x2 = to_x, y2 = to_y)
             return True
         return False
