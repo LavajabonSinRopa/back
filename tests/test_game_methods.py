@@ -82,20 +82,23 @@ def test_get_players_names(mock_repo):
     assert get_players_names(game_id = 'A') == games[0]['player_names']
     mock_repo.get_game.assert_called_once
 
-def test_pass_turn_success(mock_repo):
+def test_pass_turn_success(mock_repo, mock_take_move_card):
     mock_repo.get_game.return_value = games[1]
     assert pass_turn(game_id = 'Game 2', player_id = 'also ME')
     mock_repo.pass_turn.assert_called_once_with(game_id = 'Game 2')
+    mock_take_move_card.assert_called()
 
-def test_pass_turn_not_in_game(mock_repo):
+def test_pass_turn_not_in_game(mock_repo,mock_take_move_card):
     mock_repo.get_game.return_value = games[1]
     assert not pass_turn(game_id = 'Game 2', player_id = 'NOT ME')
     mock_repo.pass_turn.assert_not_called()
+    mock_take_move_card.assert_not_called()
 
-def test_pass_turn_not_my_turn(mock_repo):
+def test_pass_turn_not_my_turn(mock_repo,mock_take_move_card):
     mock_repo.get_game.return_value = games[1]
     assert not pass_turn(game_id = 'Game 2', player_id = 'p2')
     mock_repo.pass_turn.assert_not_called()
+    mock_take_move_card.assert_not_called()
 
 def test_start_game_by_id(mock_repo, mock_take_move_card, mock_take_figure_card):
     mock_repo.get_game.return_value = games[0]
