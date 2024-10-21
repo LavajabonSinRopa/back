@@ -3,6 +3,7 @@ from sqlalchemy.exc import NoResultFound
 import uuid
 from ..player.player_utils import drawn_figure_card, take_move_card
 from ..cards.movent_cards import can_move_to
+from ..cards.figure_cards import figure_matches
 
 
 def add_game(game_name, creator_id):
@@ -45,7 +46,7 @@ def get_game_status(game_id):
         "unique_id": game['unique_id'],
         "name": game['name'],
         "state": game['state'],
-        "board": repo.get_board(game_id),
+        "board": highlight_figures(repo.get_board(game_id)),
         "turn": game['turn'],
         "creator": game['creator'],
         "players": get_players_status(game_id)
@@ -201,13 +202,44 @@ def make_temp_movement(game_id, player_id, card_id, from_x, from_y, to_x, to_y):
             raise Exception("403, player does not have THIS card")
     
         if(can_move_to(from_x=from_x, from_y=from_y, to_x=to_x, to_y=to_y, card_type=card_type)):
-            repo.add_movement(from_x=from_x, from_y=from_y, to_x=to_x, to_y=to_y, card_id=card_id)
+            repo.add_movement(player_id=player_id, from_x=from_x, from_y=from_y, to_x=to_x, to_y=to_y, card_id=card_id)
             repo.swap_positions_board(game_id=game_id, x1 = from_x, y1 = from_y, x2 = to_x, y2 = to_y)
             return True
         return False
     
     except Exception as e:
         raise e
+
+directions = [[0,1],[0,-1],[1,0],[-1,0]]
+
+def highlight_figures(board: list[list[str]]) -> list[list[str]]:
+    n = len(board)
+    vis = [[False]*n for _ in range(n)]
+    for i in range(n):
+        for j in range(n):
+            if(vis[i][j]):
+                continue
+            vis[i][j] = True
+            processing = [[i,j]]
+            figure = [[i,j]]
+            color = board[i][j]
+            while(len(processing)>0):
+                square = processing[-1]
+                processing.pop()
+                x,y = square[0],square[1]
+                for d in directions:
+                    nx,ny = x + d[0], y + d[1]
+                    if not is_in_board(nx) or not is_in_board(ny):
+                        continue
+                    if not vis[nx][ny] and board[nx][ny] == color:
+                        vis[nx][ny] = True
+                        processing.append([nx,ny])
+                        figure.append([nx,ny])
+            if figure_matches(figure):
+                for square in figure:
+                    board[square[0]][square[1]] = board[square[0]][square[1]].upper()
+    return board
+
 
 def delete_all():
     repo.tear_down()
