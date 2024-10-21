@@ -167,7 +167,7 @@ async def make_move(game_id: str,request: MakeMoveRequest):
 
     #intentar hacer el movimiento
     try:
-        moved = make_temp_movement(game_id=game_id,player_id=request.player_id, card_id=request.card_id, from_x=request.from_y, from_y=request.from_x, to_x=request.to_y, to_y=request.to_x)
+        moved = make_temp_movement(game_id=game_id,player_id=request.player_id, card_id=request.card_id, from_x=request.from_x, from_y=request.from_y, to_x=request.to_x, to_y=request.to_y)
         if(not moved):
             raise HTTPException(status_code=403, detail="Invalid Move")
     except Exception as e:
