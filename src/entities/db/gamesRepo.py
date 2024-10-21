@@ -393,7 +393,7 @@ class gameRepository:
             session.close()
             
     @staticmethod
-    def add_movement(card_id: str, from_x: int, from_y: int, to_x: int, to_y: int):
+    def add_movement(player_id: str, card_id: str, from_x: int, from_y: int, to_x: int, to_y: int):
         # open session
         # encontrar el id del jugador a traves de la carta --> card_id && player_id
         # fijarme cuantos movientos hay --> move_number
@@ -403,22 +403,23 @@ class gameRepository:
         session = Session()
         try:
             card = session.query(Movement_card).filter_by(unique_id=card_id).one()
-
             if card.state == 'blocked':
                 raise Exception("Error CARD ALREADY USED")
-            player_id = card.player_id
             player = session.query(Player).filter_by(unique_id=player_id).one()
             move_number = len(player.movements)
-            move_id = str(uuid.uuid4)
+            move_id = str(uuid.uuid4())
             if(move_number>=3):
                 raise Exception("Error TOO MANY MOVES")
             new_movement = Movement(unique_id = move_id, player_id = player.unique_id, from_x = from_x, from_y = from_y, to_x = to_x, to_y = to_y, card_id = card_id, move_number = move_number)
             player.movements.append(new_movement)
             card.state = 'blocked'
+            session.add(new_movement)
             session.commit()
+            card = session.query(Movement_card).filter_by(unique_id=card_id).one()
             return move_number
         except Exception as e:
             session.rollback()
+            raise e
         finally:
             session.close()
 

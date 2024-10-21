@@ -166,7 +166,11 @@ async def make_move(game_id: str,request: MakeMoveRequest):
         moved = make_temp_movement(game_id=game_id,player_id=request.player_id, card_id=request.card_id, from_x=request.from_x, from_y=request.from_y, to_x=request.to_x, to_y=request.to_y)
         if(not moved):
             raise HTTPException(status_code=403, detail="Invalid Move")
-    except:
-        raise HTTPException(status_code=403, detail="Invalid Move")
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500, detail="An exception occurred")
     
+    # Avisar a los sockets de la partida sobre el movimiento hecho
+    await game_socket_manager.broadcast_game(game_id,{"type":"MovSuccess","payload": get_game_status(game_id)})
+
     return Response(status_code=200)

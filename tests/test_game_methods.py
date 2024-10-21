@@ -6,7 +6,7 @@ import os
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 
-from entities.game.game_utils import add_game,get_games, pass_turn, add_to_game, start_game_by_id, remove_player_from_game, get_players_names, make_temp_movement
+from entities.game.game_utils import add_game,get_games, pass_turn, add_to_game, start_game_by_id, remove_player_from_game, get_players_names, make_temp_movement, highlight_figures
 
 games = [{'unique_id': '1', 'creator': 'ME', 'state': 'waiting', 'players': ['ME', 'p2'], 'player_names': ['MYNAME', 'p2NAME']}, 
          {'unique_id': '2', 'creator': 'also ME', 'state': 'started', 'players': ['also ME', 'p2'], 'turn': 0},
@@ -109,7 +109,7 @@ def test_make_temp_movement_success(mock_repo):
     card = player['movement_cards'][0]
     assert make_temp_movement(game_id = games[3]['unique_id'], player_id = player['unique_id'], card_id = card['unique_id'], from_x = 0, from_y = 0, to_x = 2, to_y = 2)
     mock_repo.get_player.assert_called_once_with(player_id = player['unique_id'])
-    mock_repo.add_movement.assert_called_once_with(from_x=0, from_y=0, to_x=2, to_y=2, card_id=card['unique_id'])
+    mock_repo.add_movement.assert_called_once_with(player_id = player['unique_id'], from_x=0, from_y=0, to_x=2, to_y=2, card_id=card['unique_id'])
     mock_repo.swap_positions_board.assert_called_once_with(game_id=games[3]['unique_id'], x1=0, y1=0, x2=2, y2=2)
 
 def test_make_temp_movement_failure_on_getting_player(mock_repo):
@@ -164,6 +164,19 @@ def test_make_temp_movement_outside_board(mock_repo):
         mock_repo.get_player.assert_not_called()
         mock_repo.add_movement.assert_not_called()
         mock_repo.swap_positions_board.assert_not_called()
+
+def test_highlight_figures():
+    board = [['g','g','g','g','g','x'],['b','b','b','b','x','x'],['a','a','a','a','x','x'],['p','p','p','p','p','p'],['p','p','p','p','p','p'],['p','p','p','p','p','p']]
+    expected_result = [['G','G','G','G','G','X'],['B','B','B','B','X','X'],['A','A','A','A','X','X'],['p','p','p','p','p','p'],['p','p','p','p','p','p'],['p','p','p','p','p','p']]
+    assert expected_result == highlight_figures(board)
+    
+    board = [['p','p','p','p','p','p'],['p','p','p','p','p','p'],['p','p','p','p','p','p'],['g','g','g','g','g','x'],['b','b','b','b','x','x'],['a','a','a','a','x','x'],]
+    expected_result = [['p','p','p','p','p','p'],['p','p','p','p','p','p'],['p','p','p','p','p','p'],['G','G','G','G','G','X'],['B','B','B','B','X','X'],['A','A','A','A','X','X']]
+    assert expected_result == highlight_figures(board)
+    
+    board = [['p','p','p','p','p','p'],['p','p','p','p','p','p'],['p','p','p','p','p','p'],['p','p','p','p','p','p'],['p','p','p','p','p','p'],['p','p','p','p','p','p']]
+    assert board == highlight_figures(board)
+
 
 if __name__ == "__main__":
     unittest.main()
