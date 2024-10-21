@@ -182,5 +182,17 @@ def test_make_temp_movement_outside_board(mock_repo):
         mock_repo.add_movement.assert_not_called()
         mock_repo.swap_positions_board.assert_not_called()
 
+def test_highlight_figures():
+    board = [['g','g','g','g','g','x'],['b','b','b','b','x','x'],['a','a','a','a','x','x'],['p','p','p','p','p','p'],['p','p','p','p','p','p'],['p','p','p','p','p','p']]
+    expected_result = [['G','G','G','G','G','X'],['B','B','B','B','X','X'],['A','A','A','A','X','X'],['p','p','p','p','p','p'],['p','p','p','p','p','p'],['p','p','p','p','p','p']]
+    assert expected_result == highlight_figures(board)
+
+    board = [['p','p','p','p','p','p'],['p','p','p','p','p','p'],['p','p','p','p','p','p'],['g','g','g','g','g','x'],['b','b','b','b','x','x'],['a','a','a','a','x','x'],]
+    expected_result = [['p','p','p','p','p','p'],['p','p','p','p','p','p'],['p','p','p','p','p','p'],['G','G','G','G','G','X'],['B','B','B','B','X','X'],['A','A','A','A','X','X']]
+    assert expected_result == highlight_figures(board)
+
+    board = [['p','p','p','p','p','p'],['p','p','p','p','p','p'],['p','p','p','p','p','p'],['p','p','p','p','p','p'],['p','p','p','p','p','p'],['p','p','p','p','p','p']]
+    assert board == highlight_figures(board)
+
 if __name__ == "__main__":
     unittest.main()
