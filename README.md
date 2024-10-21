@@ -18,6 +18,18 @@ python3 src/main.py
 ### Cómo testear
 Los diferentes tests se encuentran modularizados en distintos archivos según la funcionalidad.
 
+**Para correr todos los tests**:
+```sh
+coverage run tests/run.py -v tests
+```
+
+**Para correr todos los tests excepto los relacionados a WebSockets** (no es necesario tener el back levantado):
+```sh
+coverage run tests/run.py -v tests -k "not test_websocket_game and not test_websocket_public" 
+```
+
+----
+
 Para correr todos los tests y ver reporte de coverage en la terminal:
 ```sh
 coverage run tests/run.py -v tests && coverage report -m
