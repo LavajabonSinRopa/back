@@ -109,7 +109,7 @@ def test_make_temp_movement_success(mock_repo):
     card = player['movement_cards'][0]
     assert make_temp_movement(game_id = games[3]['unique_id'], player_id = player['unique_id'], card_id = card['unique_id'], from_x = 0, from_y = 0, to_x = 2, to_y = 2)
     mock_repo.get_player.assert_called_once_with(player_id = player['unique_id'])
-    mock_repo.add_movement.assert_called_once_with(from_x=0, from_y=0, to_x=2, to_y=2, card_id=card['unique_id'])
+    mock_repo.add_movement.assert_called_once_with(player_id = player['unique_id'], from_x=0, from_y=0, to_x=2, to_y=2, card_id=card['unique_id'])
     mock_repo.swap_positions_board.assert_called_once_with(game_id=games[3]['unique_id'], x1=0, y1=0, x2=2, y2=2)
 
 def test_make_temp_movement_failure_on_getting_player(mock_repo):

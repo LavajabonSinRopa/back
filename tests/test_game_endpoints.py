@@ -323,7 +323,7 @@ def test_make_temp_move_failure_to_make_move(mock_get_game_status, mock_game_soc
     request_data = {'player_id': 'Test_Player','card_id': '100', 'from_x': 1, 'from_y': 1, 'to_x': 1, 'to_y': 1}
     response = client.post("/games/Test_Game/move", json=request_data)
 
-    assert response.status_code == 403
+    assert response.status_code == 500
     mock_is_players_turn.assert_called_once_with(player_id='Test_Player', game_id='Test_Game')
     mock_make_temp_movement.assert_called_once_with(game_id='Test_Game', player_id='Test_Player', card_id='100', from_x=1, from_y=1, to_x=1, to_y=1)
     mock_game_socket_manager.broadcast_game.assert_not_called()
