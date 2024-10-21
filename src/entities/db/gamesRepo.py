@@ -186,6 +186,26 @@ class gameRepository:
 # create_card(card_type=1, card_kind='figure', player_id='player123', game_id='game456', state='Drawn')
 
     @staticmethod
+    def get_card(card_id: str):
+        session = Session()
+        try:
+            card = session.query(Figure_card).filter_by(unique_id=card_id).one_or_none()
+            if card is None:
+                card = session.query(Movement_card).filter_by(unique_id=card_id).one()
+            return {
+                "unique_id": card.unique_id,
+                "card_type": card.card_type,
+                "player_id": card.player_id,
+                "game_id": card.game_id,
+                "state": card.state
+            }
+        except NoResultFound:
+            raise ValueError("Card does not exist")
+        finally:
+            session.close()
+
+
+    @staticmethod
     def remove_player_from_game(player_id: str, game_id: str):
         session = Session()
         try:
@@ -211,7 +231,7 @@ class gameRepository:
     def pass_turn(game_id: str):
         session = Session()
         try :
-            game = session.query(Game).filter_by(unique_id=game_id).one()
+            game = session.query(Game).filter_by(unique_id=game_id).one()            
             game.turn += 1
             session.commit()
         except Exception as e:
@@ -422,6 +442,45 @@ class gameRepository:
             raise e
         finally:
             session.close()
+
+    @staticmethod
+
+    def remove_top_movement(player_id: str):
+        session = Session()
+        try:
+            player = session.query(Player).filter_by(unique_id=player_id).one()
+            if len(player.movements) == 0:
+                raise ValueError("No movements to remove")
+            movement = player.movements.pop()
+            card = session.query(Movement_card).filter_by(unique_id=movement.card_id).one()
+            card.state = 'not blocked'
+            session.delete(movement)
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            print(f"Error removing top movement: {e}")
+        finally:
+            session.close()
+
+
+    @staticmethod
+    def apply_temp_movements(player_id: str):
+        session = Session()
+        try:
+            player = session.query(Player).filter_by(unique_id=player_id).one()
+            player_movements = player.movements
+            for movement in player_movements:
+                card = session.query(Movement_card).filter_by(unique_id=movement.card_id).one()
+                card.state = 'not drawn'
+                card.player_id = None
+                session.delete(movement)
+                session.commit()
+        except Exception as e:
+            session.rollback()
+            print(f"Error applying temps movements: {e}")
+        finally:
+            session.close()
+
 
     @staticmethod
     def get_player_movements(player_id: str) -> dict:

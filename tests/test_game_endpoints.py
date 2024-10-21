@@ -76,6 +76,16 @@ def mock_get_game_status():
     with patch('interfaces.game_endpoints.get_game_status') as mock:
         yield mock
 
+@pytest.fixture
+def mock_remove_top_movement():
+    with patch('interfaces.game_endpoints.remove_top_movement') as mock:
+        yield mock
+
+@pytest.fixture
+def mock_apply_temp_movements():
+    with patch('interfaces.game_endpoints.apply_temp_movements') as mock:
+        yield mock
+
 def test_create_game_success(mock_add_player, mock_add_game, mock_game_socket_manager, mock_get_games):
     # Arrange
     mock_add_player.return_value = '1'  # Mock the player ID
@@ -329,6 +339,61 @@ def test_make_temp_move_failure_to_make_move(mock_get_game_status, mock_game_soc
     mock_game_socket_manager.broadcast_game.assert_not_called()
     mock_get_game_status.assert_not_called()
 
+def test_make_unmove_success(mock_get_game_status, mock_game_socket_manager,mock_is_players_turn, mock_remove_top_movement):
+    mock_is_players_turn.return_value = True
+    mock_game_socket_manager.broadcast_game = AsyncMock()
+    mock_get_game_status.return_value = []
+
+    request_data = {'player_id': 'Test_Player'}
+    response = client.post("/games/Test_Game/unmove", json=request_data)
+
+    assert response.status_code == 200
+    mock_is_players_turn.assert_called_once_with(player_id='Test_Player', game_id='Test_Game')
+    mock_remove_top_movement.assert_called_once_with(game_id='Test_Game', player_id='Test_Player')
+    mock_game_socket_manager.broadcast_game.assert_called_once()
+    mock_get_game_status.assert_called_once()
+
+def test_make_unmove_failure_no_turn(mock_get_game_status, mock_game_socket_manager,mock_is_players_turn, mock_remove_top_movement):
+    mock_is_players_turn.return_value = False
+    mock_game_socket_manager.broadcast_game = AsyncMock()
+    mock_get_game_status.return_value = []
+
+    request_data = {'player_id': 'Test_Player'}
+    response = client.post("/games/Test_Game/unmove", json=request_data)
+
+    assert response.status_code == 404
+    mock_is_players_turn.assert_called_once_with(player_id='Test_Player', game_id='Test_Game')
+    mock_remove_top_movement.assert_not_called()
+    mock_game_socket_manager.broadcast_game.assert_not_called()
+    mock_get_game_status.assert_not_called()
+    
+def test_apply_move_success(mock_get_game_status, mock_game_socket_manager, mock_is_players_turn,mock_apply_temp_movements):
+    mock_is_players_turn.return_value = True
+    mock_apply_temp_movements.return_value = True
+    mock_game_socket_manager.broadcast_game = AsyncMock()
+    mock_get_game_status.return_value = []
+
+    request_data = {'player_id': 'Test_Player'}
+    response = client.post("/games/Test_Game/apply", json=request_data)
+
+    assert response.status_code == 200
+    mock_apply_temp_movements.assert_called_once_with(game_id='Test_Game', player_id='Test_Player')
+    mock_game_socket_manager.broadcast_game.assert_called_once()
+    mock_get_game_status.assert_called_once()
+
+def test_apply_move_failure_no_turn(mock_get_game_status, mock_game_socket_manager, mock_apply_temp_movements):
+    mock_is_players_turn.return_value = False
+    mock_game_socket_manager.broadcast_game = AsyncMock()
+    mock_get_game_status.return_value = []
+
+    request_data = {'player_id': 'Test_Player'}
+    response = client.post("/games/Test_Game/apply", json=request_data)
+
+    assert response.status_code == 403
+    mock_apply_temp_movements.assert_not_called()
+    mock_game_socket_manager.broadcast_game.assert_not_called()
+    mock_get_game_status.assert_not_called()
+    
 
 if __name__ == "__main__":
     pytest.main()
