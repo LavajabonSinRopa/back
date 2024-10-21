@@ -128,6 +128,9 @@ def pass_turn(game_id, player_id):
     for movement in player['movements']:
         remove_top_movement(game_id=game_id, player_id=player_id)
 
+    while len(player['movement_cards'])<3:
+        take_move_card(player_id,game_id)
+    
     repo.pass_turn(game_id=game_id)
     return True
 
