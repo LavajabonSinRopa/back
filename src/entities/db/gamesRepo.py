@@ -211,7 +211,7 @@ class gameRepository:
     def pass_turn(game_id: str):
         session = Session()
         try :
-            game = session.query(Game).filter_by(unique_id=game_id).one()
+            game = session.query(Game).filter_by(unique_id=game_id).one()            
             game.turn += 1
             session.commit()
         except Exception as e:
@@ -422,6 +422,45 @@ class gameRepository:
             raise e
         finally:
             session.close()
+
+    @staticmethod
+
+    def remove_top_movement(player_id: str):
+        session = Session()
+        try:
+            player = session.query(Player).filter_by(unique_id=player_id).one()
+            if len(player.movements) == 0:
+                raise ValueError("No movements to remove")
+            movement = player.movements.pop()
+            card = session.query(Movement_card).filter_by(unique_id=movement.card_id).one()
+            card.state = 'not blocked'
+            session.delete(movement)
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            print(f"Error removing top movement: {e}")
+        finally:
+            session.close()
+
+
+    @staticmethod
+    def apply_temp_movements(player_id: str):
+        session = Session()
+        try:
+            player = session.query(Player).filter_by(unique_id=player_id).one()
+            player_movements = player.movements
+            for movement in player_movements:
+                card = session.query(Movement_card).filter_by(unique_id=movement.card_id).one()
+                card.state = 'not drawn'
+                card.player_id = None
+                session.delete(movement)
+                session.commit()
+        except Exception as e:
+            session.rollback()
+            print(f"Error applying temps movements: {e}")
+        finally:
+            session.close()
+
 
     @staticmethod
     def get_player_movements(player_id: str) -> dict:

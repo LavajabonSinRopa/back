@@ -124,6 +124,10 @@ def pass_turn(game_id, player_id):
     if(game['players'][game['turn']%len(game['players'])]!=player_id):
         return False
     
+    player = repo.get_player(player_id=player_id)
+    for movement in player['movements']:
+        remove_top_movement(game_id=game_id, player_id=player_id)
+
     repo.pass_turn(game_id=game_id)
     return True
 
