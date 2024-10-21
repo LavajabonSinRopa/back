@@ -53,6 +53,7 @@ def get_game_status(game_id):
     player_id = game['players'][game['turn']%len(game['players'])]
     moves = repo.get_player_movements(player_id=player_id)
 
+    print(moves)
     for move in moves:
         board[move['from_x']][move['from_y']] = board[move['from_x']][move['from_y']] + '%'
         board[move['to_x']][move['to_y']] = board[move['to_x']][move['to_y']] + '%'
