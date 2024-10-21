@@ -47,11 +47,21 @@ def get_game_status(game_id):
     if game is None:
         raise ValueError(f"No game found with ID: {game_id}")
     
+    board = highlight_figures(game['board'])
+
+    #resaltar casillas usadas en movimientos temporales --> primera letra en mayuscula
+    player_id = game['players'][game['turn']%len(game['players'])]
+    moves = repo.get_player_movements(player_id=player_id)
+
+    for move in moves:
+        board[move['from_x']][move['from_y']] = board[move['from_x']][move['from_y']] + '%'
+        board[move['to_x']][move['to_y']] = board[move['to_x']][move['to_y']] + '%'
+
     status = {
         "unique_id": game['unique_id'],
         "name": game['name'],
         "state": game['state'],
-        "board": highlight_figures(repo.get_board(game_id)),
+        "board": board,
         "turn": game['turn'],
         "creator": game['creator'],
         "players": get_players_status(game_id)
