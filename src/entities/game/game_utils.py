@@ -267,8 +267,7 @@ def remove_top_movement(game_id, player_id):
     
     try:
         game = repo.get_game(game_id)
-        player = repo.get_player(player_id=player_id)
-        movements = player['movements']
+        movements = repo.get_player_movements(player_id=player_id)
         if not movements:
             raise Exception("403, player has no movements")
         repo.swap_positions_board(game_id=game_id, x1 = movements[-1]['from_x'], y1 = movements[-1]['from_y'], x2 = movements[-1]['to_x'], y2 = movements[-1]['to_y'])
