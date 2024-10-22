@@ -453,7 +453,7 @@ class test_games_Repo(unittest.TestCase):
         assert(repo.get_card(card_id)['state'] == 'not drawn')
         assert(repo.get_card(card_id)['player_id'] == None)
         
-|    @patch('entitie|s.db.gamesRepo.Session')
+    @patch('entities.db.gamesRepo.Session')
     def test_get_player_movements_no_result(self, MockSession):
         mock_session = MagicMock()
         MockSession.return_value = mock_session
