@@ -56,10 +56,10 @@ def get_game_status(game_id):
     print(moves)
 
     for move in moves:
-        if board[move['from_x']][move['from_y']][-1] != '%':
-            board[move['from_x']][move['from_y']] = board[move['from_x']][move['from_y']] + '%'
-        if board[move['to_x']][move['to_y']][-1] != '%':
-            board[move['to_x']][move['to_y']] = board[move['to_x']][move['to_y']] + '%'
+        if board[move['from_y']][move['from_x']][-1] != '%':
+            board[move['from_y']][move['from_x']] = board[move['from_y']][move['from_x']] + '%'
+        if board[move['to_y']][move['to_x']][-1] != '%':
+            board[move['to_y']][move['to_x']] = board[move['to_y']][move['to_x']] + '%'
 
     status = {
         "unique_id": game['unique_id'],
