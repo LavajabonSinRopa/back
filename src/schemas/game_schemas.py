@@ -34,3 +34,18 @@ class SkipTurnRequest(BaseModel):
  # POST a games/<game_id>/start   
 class StartGameResponse(BaseModel):
     player_id: str
+
+# POST a games/<game_id>/move
+class MakeMoveRequest(BaseModel):
+    player_id: str
+    card_id: str
+    from_x: int
+    from_y: int
+    to_x: int
+    to_y: int
+    
+class UnmakeMoveRequest(BaseModel):
+    player_id: str
+    
+class applyTempMovementsRequest(BaseModel):
+    player_id: str

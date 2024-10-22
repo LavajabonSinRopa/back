@@ -1,8 +1,9 @@
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import NoResultFound
-from .models import Game, Player, engine, Figure_card, Movement_card
+from .models import Game, Player, engine, Figure_card, Movement_card, Movement
 from typing import List
 import uuid
+import random
 
 # Create a session
 Session = sessionmaker(bind=engine)
@@ -43,12 +44,13 @@ class gameRepository:
             game = session.query(Game).filter_by(unique_id=game_id).one()
             return {
                 "unique_id": game.unique_id,
-                "name": game.name,
+                "name": game.name,  
                 "state": game.state,
-                "board": game.board,
                 "turn": game.turn,
                 "creator": game.creator,
-                "players": [player.unique_id for player in game.players]
+                "players": [player.unique_id for player in game.players],
+                "player_names": [player.name for player in game.players],
+                "board": gameRepository.get_board(game_id)
             }
         except NoResultFound:
             raise ValueError("Game_model does not exist")
@@ -65,15 +67,14 @@ class gameRepository:
             return {
                 "unique_id": player.unique_id,
                 "name": player.name,
-                "figure_cards": [{'type':fcard.card_type,'state':fcard.state} for fcard in player.figure_cards],
-                "movement_cards": [mcard.card_type for mcard in player.movement_cards]
+                "figure_cards": [{'type': fcard.card_type, 'state': fcard.state} for fcard in player.figure_cards if fcard.state != 'not drawn'],
+                "movement_cards": [{'type': mcard.card_type, 'unique_id': mcard.unique_id, 'state': mcard.state} for mcard in player.movement_cards]
             }
         except NoResultFound:
             raise ValueError("Game_model does not exist")
         finally:
             session.close()
 
-    
     @staticmethod
     def get_games() -> List[dict]:
         session = Session()
@@ -84,16 +85,16 @@ class gameRepository:
                     "unique_id": game.unique_id,
                     "name": game.name,
                     "state": game.state,
-                    "board": game.board,
                     "turn": game.turn,
                     "creator": game.creator,
-                    "players": [player.unique_id for player in game.players]
+                    "players": [player.unique_id for player in game.players],
+                    "player_names": [player.name for player in game.players]
                 }
                 for game in games
             ]
         finally:
             session.close()
-
+   
     @staticmethod
     def tear_down():
         session = Session()
@@ -102,6 +103,9 @@ class gameRepository:
             session.query(Player).delete()
             # Delete all entries from the Games table
             session.query(Game).delete()
+            # Deleete all entries from the Cards table
+            session.query(Figure_card).delete()
+            session.query(Movement_card).delete()
             # Commit the changes
             session.commit()
         except Exception as e:
@@ -148,20 +152,23 @@ class gameRepository:
         try:
             
             player = session.query(Player).filter_by(unique_id=player_id).one_or_none()
-            if player is None:
-                raise ValueError(f"No player found with ID: {player_id}")
             
             # Instantiate the card based on the specified class
             if card_kind == 'figure':
                 card = Figure_card(unique_id=str(uuid.uuid4()), card_type=card_type, state=state, player_id=player_id, game_id=game_id)
-                player.figure_cards.append(card)
+                if player != None:
+                    player.figure_cards.append(card)
+                else:
+                    session.add(card)
             elif card_kind == 'movement':
                 card = Movement_card(unique_id=str(uuid.uuid4()), card_type=card_type, player_id=player_id, game_id=game_id)
-                player.movement_cards.append(card)
+                if player != None:
+                    player.movement_cards.append(card)
+                else:
+                    session.add(card)
             else:
                 raise ValueError("Invalid card class specified.")
             
-
             session.commit()
             return({"card_id" : card.unique_id,
                     "card_kind":card_kind,
@@ -177,6 +184,26 @@ class gameRepository:
 
 # Example usage:
 # create_card(card_type=1, card_kind='figure', player_id='player123', game_id='game456', state='Drawn')
+
+    @staticmethod
+    def get_card(card_id: str):
+        session = Session()
+        try:
+            card = session.query(Figure_card).filter_by(unique_id=card_id).one_or_none()
+            if card is None:
+                card = session.query(Movement_card).filter_by(unique_id=card_id).one()
+            return {
+                "unique_id": card.unique_id,
+                "card_type": card.card_type,
+                "player_id": card.player_id,
+                "game_id": card.game_id,
+                "state": card.state
+            }
+        except NoResultFound:
+            raise ValueError("Card does not exist")
+        finally:
+            session.close()
+
 
     @staticmethod
     def remove_player_from_game(player_id: str, game_id: str):
@@ -204,7 +231,7 @@ class gameRepository:
     def pass_turn(game_id: str):
         session = Session()
         try :
-            game = session.query(Game).filter_by(unique_id=game_id).one()
+            game = session.query(Game).filter_by(unique_id=game_id).one()            
             game.turn += 1
             session.commit()
         except Exception as e:
@@ -223,6 +250,247 @@ class gameRepository:
         except Exception as e:
             session.rollback()
             raise e
+        finally:
+            session.close()
+
+## Cards
+    @staticmethod
+    def get_move_deck(game_id:str) -> List[dict]:
+        session = Session()
+        try:
+            movement_cards = session.query(Movement_card).filter_by(game_id=game_id,player_id=None).all()
+            return [
+                {
+                    'unique_id':mcard.unique_id,
+                    'card_type':mcard.card_type,
+                    'player_id':mcard.player_id
+                 } 
+                for mcard in movement_cards
+            ]
+        finally:
+            session.close()
+            
+    @staticmethod
+    def take_move_card(player_id:str, game_id: str):
+        session = Session()
+        try:
+            # Retrieve the game
+            game = session.query(Game).filter_by(unique_id=game_id).one_or_none()
+            if game is None:
+                raise ValueError(f"No game found with ID: {game_id}")
+
+            # Retrieve the player
+            player = session.query(Player).filter_by(unique_id=player_id).one_or_none()
+            if player is None:
+                raise ValueError(f"No player found with ID: {player_id}")
+
+            # Retrieve the movement cards
+            movement_cards = session.query(Movement_card).filter_by(player_id=None, game_id=game_id).all()
+            if len(movement_cards) == 0:
+                raise ValueError("No available movement cards")
+
+            # Assign a random movement card to the player
+            card = random.choice(movement_cards)
+            card.player_id = player_id
+            player.movement_cards.append(card)
+            session.commit()
+            return card.card_type
+        except Exception as e:
+            session.rollback()
+            print(f"Error taking random movement card: {e}")
+        finally:
+            session.close()
+    
+    @staticmethod
+    def drawn_figure_card(player_id:str):
+        session = Session()
+        try:
+            # Retrieve the player
+            player = session.query(Player).filter_by(unique_id=player_id).one_or_none()
+            if player is None:
+                raise ValueError(f"No player found with ID: {player_id}")
+
+            if len(player.figure_cards) == 0:
+                raise ValueError("No figure cards")
+            for card in player.figure_cards:
+                if card.state == 'not drawn':
+                    card.state = 'drawn'
+                    session.commit()
+                    return card.card_type
+        
+            raise ValueError("No 'Not drawn' figure cards found") 
+        except Exception as e:
+            session.rollback()
+            print(f"Error drawing figure card: {e}")
+        finally:
+            session.close()
+    
+    @staticmethod
+    def create_board(game_id: str):
+        session = Session()
+        game = session.query(Game).filter_by(unique_id=game_id).one_or_none()
+        
+        colors = ['red', 'green', 'blue', 'yellow']
+        
+        color_pool = colors * 9 
+        random.shuffle(color_pool)
+        try:
+            if game is None:
+                raise ValueError(f"No game found with ID: {game_id}")
+            
+            board_colors = []
+            for _ in range(6):
+                for _ in range(6):
+                    color = color_pool.pop()
+                    board_colors.append(color)
+            board_string = ' '.join(board_colors)
+            game.board = board_string      
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            print(f"Error creating board: {e}")
+        finally:
+            session.close()
+            
+    @staticmethod
+    def get_board(game_id:str) -> List[List[str]]:
+        """
+        Return the board matrix for a game.
+        :param game_id: The unique ID of the game.
+        
+        board_matrix: A 6x6 matrix representing the board. Each cell contains string color. (red, green, blue, yellow)
+        
+        board_matrix[y][x] represents the color of the cell at position (x, y).
+        """
+        session = Session()
+        
+        board_matrix = None
+        try:
+            game = session.query(Game).filter_by(unique_id=game_id).one_or_none()
+            if game is None:
+                raise ValueError(f"No game found with ID: {game_id}")
+            
+            if game.board is not None:
+                board_string = game.board
+                board_list = board_string.split(' ')
+            
+                board_matrix = [[None for _ in range(6)] for _ in range(6)]
+                for y in range(6):
+                    for x in range(6):
+                        board_matrix[y][x] = board_list.pop(0)
+            return board_matrix
+        except Exception as e:
+            print(f"Error getting board: {e}")
+        finally:
+            session.close()
+    
+    @staticmethod
+    def swap_positions_board(game_id: str, x1: int, y1: int, x2: int, y2: int):
+        session = Session()
+        try:
+            if x1 < 0 or x1 > 5 or y1 < 0 or y1 > 5 or x2 < 0 or x2 > 5 or y2 < 0 or y2 > 5:
+                raise ValueError("Invalid coordinates")
+            
+            game = session.query(Game).filter_by(unique_id=game_id).one_or_none()
+            if game is None:
+                raise ValueError(f"No game found with ID: {game_id}")
+            if game.state != 'started':
+                raise ValueError("Game is not started")
+            
+            board_list = game.board.split(' ')
+            index1 = y1 * 6 + x1
+            index2 = y2 * 6 + x2
+            temp_color = board_list[index1]
+            board_list[index1] = board_list[index2]
+            board_list[index2] = temp_color
+            board_string = ' '.join(board_list)
+            game.board = board_string            
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            print(f"Error swapping positions in board: {e}")
+        finally:
+            session.close()
+            
+    @staticmethod
+    def add_movement(player_id: str, card_id: str, from_x: int, from_y: int, to_x: int, to_y: int):
+        # open session
+        # encontrar el id del jugador a traves de la carta --> card_id && player_id
+        # fijarme cuantos movientos hay --> move_number
+        # crear movement
+        # meter en base de datos
+        # return numero de movimiento
+        session = Session()
+        try:
+            card = session.query(Movement_card).filter_by(unique_id=card_id).one()
+            if card.state == 'blocked':
+                raise Exception("Error CARD ALREADY USED")
+            player = session.query(Player).filter_by(unique_id=player_id).one()
+            move_number = len(player.movements)
+            move_id = str(uuid.uuid4())
+            if(move_number>=3):
+                raise Exception("Error TOO MANY MOVES")
+            new_movement = Movement(unique_id = move_id, player_id = player.unique_id, from_x = from_x, from_y = from_y, to_x = to_x, to_y = to_y, card_id = card_id, move_number = move_number)
+            player.movements.append(new_movement)
+            card.state = 'blocked'
+            session.add(new_movement)
+            session.commit()
+            card = session.query(Movement_card).filter_by(unique_id=card_id).one()
+            return move_number
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            session.close()
+
+    @staticmethod
+
+    def remove_top_movement(player_id: str):
+        session = Session()
+        try:
+            player = session.query(Player).filter_by(unique_id=player_id).one()
+            if len(player.movements) == 0:
+                raise ValueError("No movements to remove")
+            movement = player.movements.pop()
+            card = session.query(Movement_card).filter_by(unique_id=movement.card_id).one()
+            card.state = 'not blocked'
+            session.delete(movement)
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            print(f"Error removing top movement: {e}")
+        finally:
+            session.close()
+
+
+    @staticmethod
+    def apply_temp_movements(player_id: str):
+        session = Session()
+        try:
+            player = session.query(Player).filter_by(unique_id=player_id).one()
+            player_movements = player.movements
+            for movement in player_movements:
+                card = session.query(Movement_card).filter_by(unique_id=movement.card_id).one()
+                card.state = 'not drawn'
+                card.player_id = None
+                session.delete(movement)
+                session.commit()
+        except Exception as e:
+            session.rollback()
+            print(f"Error applying temps movements: {e}")
+        finally:
+            session.close()
+
+
+    @staticmethod
+    def get_player_movements(player_id: str) -> dict:
+        session = Session()
+        try:
+            player = session.query(Player).filter_by(unique_id=player_id).one()
+            print(player.movements)
+            return [{'from_x' : m.from_x, 'from_y' : m.from_y, 'to_x' : m.to_x, 'to_y' : m.to_y} for m in player.movements]
+        except NoResultFound:
+            raise ValueError("Game_model does not exist")
         finally:
             session.close()
 

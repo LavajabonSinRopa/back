@@ -1,7 +1,8 @@
 fastapi
 uvicorn
-sqlalchemy
+sqlalchemy<2.0
 websockets
 pytest
 pytest-asyncio
 requests
+httpx
