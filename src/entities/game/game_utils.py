@@ -47,11 +47,25 @@ def get_game_status(game_id):
     if game is None:
         raise ValueError(f"No game found with ID: {game_id}")
     
+    board = highlight_figures(game['board'])
+
+    #resaltar casillas usadas en movimientos temporales --> primera letra en mayuscula
+    player_id = game['players'][game['turn']%len(game['players'])]
+    moves = repo.get_player_movements(player_id=player_id)
+
+    print(moves)
+
+    for move in moves:
+        if board[move['from_x']][move['from_y']][-1] != '%':
+            board[move['from_x']][move['from_y']] = board[move['from_x']][move['from_y']] + '%'
+        if board[move['to_x']][move['to_y']][-1] != '%':
+            board[move['to_x']][move['to_y']] = board[move['to_x']][move['to_y']] + '%'
+
     status = {
         "unique_id": game['unique_id'],
         "name": game['name'],
         "state": game['state'],
-        "board": highlight_figures(repo.get_board(game_id)),
+        "board": board,
         "turn": game['turn'],
         "creator": game['creator'],
         "players": get_players_status(game_id)
@@ -224,7 +238,9 @@ def make_temp_movement(game_id, player_id, card_id, from_x, from_y, to_x, to_y):
     
         if(can_move_to(from_x=from_x, from_y=from_y, to_x=to_x, to_y=to_y, card_type=card_type)):
             repo.add_movement(player_id=player_id, from_x=from_x, from_y=from_y, to_x=to_x, to_y=to_y, card_id=card_id)
+            print(repo.get_board(game_id=game_id))
             repo.swap_positions_board(game_id=game_id, x1 = from_x, y1 = from_y, x2 = to_x, y2 = to_y)
+            print(repo.get_board(game_id=game_id))
             return True
         return False
     
