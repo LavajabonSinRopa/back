@@ -67,7 +67,7 @@ class gameRepository:
             return {
                 "unique_id": player.unique_id,
                 "name": player.name,
-                "figure_cards": [{'type': fcard.card_type, 'state': fcard.state} for fcard in player.figure_cards if fcard.state != 'not drawn'],
+                "figure_cards": [{'type': fcard.card_type, 'unique_id': fcard.unique_id, 'state': fcard.state} for fcard in player.figure_cards if fcard.state != 'not drawn'],
                 "movement_cards": [{'type': mcard.card_type, 'unique_id': mcard.unique_id, 'state': mcard.state} for mcard in player.movement_cards]
             }
         except NoResultFound:
@@ -481,7 +481,6 @@ class gameRepository:
         finally:
             session.close()
 
-
     @staticmethod
     def get_player_movements(player_id: str) -> dict:
         session = Session()
@@ -491,6 +490,20 @@ class gameRepository:
             return [{'from_x' : m.from_x, 'from_y' : m.from_y, 'to_x' : m.to_x, 'to_y' : m.to_y} for m in player.movements]
         except NoResultFound:
             raise ValueError("Game_model does not exist")
+        finally:
+            session.close()
+
+    @staticmethod
+    def discard_card(card_id: str):
+        session = Session()
+        try:
+            # Retrieve the card
+            card = session.query(Figure_card).filter_by(unique_id=card_id).one_or_none()
+            card.state = 'discarded'
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            raise e
         finally:
             session.close()
 

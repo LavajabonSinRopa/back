@@ -86,6 +86,11 @@ def mock_apply_temp_movements():
     with patch('interfaces.game_endpoints.apply_temp_movements') as mock:
         yield mock
 
+@pytest.fixture
+def mock_complete_figure():
+    with patch('interfaces.game_endpoints.complete_figure') as mock:
+        yield mock
+
 def test_create_game_success(mock_add_player, mock_add_game, mock_game_socket_manager, mock_get_games):
     # Arrange
     mock_add_player.return_value = '1'  # Mock the player ID
@@ -382,7 +387,7 @@ def test_apply_move_success(mock_get_game_status, mock_game_socket_manager, mock
     mock_game_socket_manager.broadcast_game.assert_called_once()
     mock_get_game_status.assert_called_once()
 
-def test_apply_move_failure_no_turn(mock_get_game_status, mock_game_socket_manager, mock_apply_temp_movements):
+def test_apply_move_failure_no_turn(mock_get_game_status, mock_game_socket_manager, mock_is_players_turn, mock_apply_temp_movements):
     mock_is_players_turn.return_value = False
     mock_game_socket_manager.broadcast_game = AsyncMock()
     mock_get_game_status.return_value = []
@@ -395,6 +400,28 @@ def test_apply_move_failure_no_turn(mock_get_game_status, mock_game_socket_manag
     mock_game_socket_manager.broadcast_game.assert_not_called()
     mock_get_game_status.assert_not_called()
     
+def test_complete_figure_success(mock_get_game_status, mock_game_socket_manager, mock_complete_figure):
+    mock_game_socket_manager.broadcast_game = AsyncMock()
+    mock_get_game_status.return_value = []
+
+    request_data = {'player_id': 'Test_Player', 'x' : 1, 'y' : 4, 'card_id' : 'test_card'}
+    response = client.post("/games/Test_Game/completeFigure", json=request_data)
+
+    assert response.status_code == 200
+    mock_complete_figure.assert_called_once_with(game_id='Test_Game', player_id='Test_Player', card_id='test_card', i=4, j=1)
+    mock_game_socket_manager.broadcast_game.assert_called_once()
+
+def test_complete_figure_failure(mock_get_game_status, mock_game_socket_manager, mock_complete_figure):
+    mock_game_socket_manager.broadcast_game = AsyncMock()
+    mock_get_game_status.return_value = []
+    mock_complete_figure.side_effect = Exception("test")
+
+    request_data = {'player_id': 'Test_Player', 'x' : 1, 'y' : 4, 'card_id' : 'test_card'}
+    response = client.post("/games/Test_Game/completeFigure", json=request_data)
+
+    assert response.status_code == 403
+    mock_complete_figure.assert_called_once_with(game_id='Test_Game', player_id='Test_Player', card_id='test_card', i=4, j=1)
+    mock_game_socket_manager.broadcast_game.assert_not_called()
 
 if __name__ == "__main__":
     pytest.main()

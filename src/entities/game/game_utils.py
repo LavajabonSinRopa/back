@@ -5,6 +5,7 @@ from ..player.player_utils import drawn_figure_card, take_move_card
 from ..cards.movent_cards import can_move_to
 from ..cards.figure_cards import figure_exists, figure_matches_type
 
+BOARD_LEN = 6
 
 def add_game(game_name, creator_id):
     new_game_id = repo.create_game(unique_id = str(uuid.uuid4()), name = game_name, state = "waiting", creator_id = creator_id)
@@ -214,7 +215,7 @@ def start_game_by_id(game_id):
 
 def is_in_board(x):
     #TODO make global variable for board size
-    return x >= 0 and x <= 5
+    return x >= 0 and x < BOARD_LEN
 
 def make_temp_movement(game_id, player_id, card_id, from_x, from_y, to_x, to_y):
     # assumes that player is in game
@@ -316,11 +317,15 @@ def complete_figure(game_id, player_id, card_id, i, j):
         for card in cards:
             if card['unique_id'] == card_id:
                 card_type = card['type']
+                if card['state'] == 'blocked':
+                    raise Exception("Card is blocked")
+                break
         if card_type == -1:
             raise Exception("Doesn't have card")
-        
+
         board = game['board']
-        vis = set()
+        vis = [[False]*BOARD_LEN for _ in range(BOARD_LEN)]
+        vis[i][j] = True
         processing = [[i,j]]
         figure = [[i,j]]
         color = board[i][j]
@@ -332,15 +337,20 @@ def complete_figure(game_id, player_id, card_id, i, j):
                 nx,ny = x + d[0], y + d[1]
                 if not is_in_board(nx) or not is_in_board(ny):
                     continue
-                if not [nx,ny] in vis[nx][ny] and board[nx][ny] == color:
-                    vis.add([i,j])
+                if not vis[nx][ny] and board[nx][ny] == color:
+                    vis[nx][ny] = True
                     processing.append([nx,ny])
                     figure.append([nx,ny])
         
         if not figure_matches_type(figure_type=card_type, figure=figure):
             raise Exception("Figure doesn't match")
         
-        apply_temp_movements(game_id=game_id,player_id=player_id)
+        apply_temp_movements(player_id=player_id)
+
+        # discard figure card
+        repo.discard_card(card_id=card_id)
+
+        #TODO: update color prohibido
         return True
 
     except Exception as e:
