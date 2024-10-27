@@ -191,7 +191,7 @@ def test_join_not_waiting(mock_add_player, mock_game_socket_manager, mock_get_ga
     mock_game_socket_manager.broadcast_game.assert_not_called
 
 
-def test_leave_game_success(mock_get_game_by_id, mock_remove_player_from_game, mock_game_socket_manager):
+def test_leave_game_success(mock_get_game_status, mock_get_game_by_id, mock_remove_player_from_game, mock_game_socket_manager):
     
     mock_get_game_by_id.return_value = {'players': ['0','Test_Player'], 'state': 'waiting', 'creator': '0', 'player_names': ['mauri', 'rimau']}
     mock_game_socket_manager.broadcast_game = AsyncMock()
@@ -204,7 +204,7 @@ def test_leave_game_success(mock_get_game_by_id, mock_remove_player_from_game, m
     mock_remove_player_from_game.assert_called_once_with(game_id = "Test_Game", player_id = "Test_Player")
     mock_game_socket_manager.broadcast_game.assert_called_with('Test_Game', {'type': 'GameWon', 'payload': {'player_id': '0', 'player_name': 'mauri'}})
 
-def test_leave_game_creator(mock_get_game_by_id, mock_remove_player_from_game, mock_game_socket_manager):
+def test_leave_game_creator(mock_get_game_status, mock_get_game_by_id, mock_remove_player_from_game, mock_game_socket_manager):
     
     mock_get_game_by_id.return_value = {'players': ['0','Test_Player'], 'state': 'waiting', 'creator': '0'}
     mock_game_socket_manager.broadcast_game = AsyncMock()
@@ -216,7 +216,7 @@ def test_leave_game_creator(mock_get_game_by_id, mock_remove_player_from_game, m
     mock_get_game_by_id.assert_called_once_with("Test_Game")
     mock_remove_player_from_game.assert_not_called
 
-def test_leave_game_no_game(mock_get_game_by_id, mock_remove_player_from_game, mock_game_socket_manager):
+def test_leave_game_no_game(mock_get_game_status, mock_get_game_by_id, mock_remove_player_from_game, mock_game_socket_manager):
     
     mock_get_game_by_id.side_effect = Exception("TEST")
     mock_game_socket_manager.broadcast_game = AsyncMock()
@@ -231,7 +231,7 @@ def test_leave_game_no_game(mock_get_game_by_id, mock_remove_player_from_game, m
     mock_game_socket_manager.broadcast_game.assert_not_called()
 
 
-def test_leave_game_not_in_game(mock_get_game_by_id, mock_remove_player_from_game, mock_game_socket_manager):
+def test_leave_game_not_in_game(mock_get_game_status, mock_get_game_by_id, mock_remove_player_from_game, mock_game_socket_manager):
     
     mock_get_game_by_id.return_value = {'players': ['0','Test_Player'], 'state': 'waiting', 'creator': '0'}
     mock_game_socket_manager.broadcast_game = AsyncMock()
