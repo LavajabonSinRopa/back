@@ -202,6 +202,7 @@ def test_leave_game_success(mock_get_game_by_id, mock_remove_player_from_game, m
     assert response.status_code == 200
     mock_get_game_by_id.assert_called_once_with("Test_Game")
     mock_remove_player_from_game.assert_called_once_with(game_id = "Test_Game", player_id = "Test_Player")
+    mock_game_socket_manager.broadcast_game.assert_called_with('Test_Game', {'type': 'GameWon', 'payload': {'player_id': '0', 'player_name': 'mauri'}})
 
 def test_leave_game_creator(mock_get_game_by_id, mock_remove_player_from_game, mock_game_socket_manager):
     
