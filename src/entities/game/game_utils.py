@@ -109,6 +109,7 @@ def add_to_game(player_id,game_id):
 def remove_player_from_game(player_id, game_id):
     try:
         repo.remove_player_from_game(player_id=player_id, game_id=game_id)
+        remove_all_movements(player_id=player_id,game_id=game_id)
     except Exception as e:
         raise e
     
@@ -280,7 +281,6 @@ def highlight_figures(board: list[list[str]]) -> list[list[str]]:
 
 
 def remove_top_movement(game_id, player_id):
-    
     try:
         game = repo.get_game(game_id)
         movements = repo.get_player_movements(player_id=player_id)
@@ -294,6 +294,9 @@ def remove_top_movement(game_id, player_id):
 def apply_temp_movements(player_id):
     repo.apply_temp_movements(player_id=player_id)
 
+def remove_all_movements(game_id, player_id):
+    while(len(repo.get_player_movements(player_id=player_id))>0):
+        remove_top_movement(game_id=game_id,player_id=player_id)
 
 def delete_all():
     repo.tear_down()

@@ -87,6 +87,11 @@ async def leave_game(game_id: str, request: LeaveGameRequest):
     # Avisar a los sockets de la partida sobre el jugador que abandona.
     await game_socket_manager.broadcast_game(game_id,{"type":"PlayerLeft","payload": {'player_id' : request.player_id, 'player_name': player_name}})
 
+    # Avisar a los sockets de la partida de un potencial cambio en el tablero (si el jugador que abandona tenía movimientos parciales hechos)
+    if(game["state"]!="waiting"):
+        await game_socket_manager.broadcast_game(game_id,{"type":"MoveUnMade","payload": get_game_status(game_id)})
+    
+    game["player_names"].remove(player_name)
     game['players'].remove(request.player_id)
     if len(game['players']) <= 1:
         await game_socket_manager.broadcast_game(game_id,{"type":"GameWon","payload": {'player_id' : game['players'][0], 'player_name': game['player_names'][0]}})
@@ -178,7 +183,6 @@ async def make_move(game_id: str,request: MakeMoveRequest):
     await game_socket_manager.broadcast_game(game_id,{"type":"MovSuccess","payload": get_game_status(game_id)})
 
     return Response(status_code=200)
-
 
 @router.post("/{game_id}/unmove")
 async def unmake_move(game_id: str,request: UnmakeMoveRequest):
