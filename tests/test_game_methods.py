@@ -28,7 +28,7 @@ games = [{'unique_id': '1', 'creator': 'ME', 'state': 'waiting', 'players': ['ME
                        'movements': [{'from_x': 0, 'from_y': 0, 'to_x': 5, 'to_y': 5}]}]},
         {'unique_id': 'adb7026d-cf96-4bac-937b-a8106e56f160', 'name': 'GAME3', 'state': 'started', 
           'board': [['figure', 'figure', 'figure', 'blue', 'red', 'blue'], 
-                    ['figure', 'green', 'green', 'yellow', 'blue', 'red'], 
+                    ['figure', 'figure', 'green', 'yellow', 'blue', 'red'], 
                     ['blue', 'blue', 'yellow', 'yellow', 'yellow', 'green'], 
                     ['green', 'red', 'yellow', 'green', 'green', 'red'], 
                     ['yellow', 'blue', 'red', 'yellow', 'green', 'figure'], 
@@ -246,7 +246,13 @@ def test_complete_figure_failure(mock_repo):
     mock_repo.get_game.return_value = games[4]
     mock_repo.get_player.return_value = games[3]['players'][0]
     try:
-        complete_figure(game_id = games[3]['unique_id'], player_id = games[3]['players'][0]['unique_id'], card_id = games[3]['players'][0]['figure_cards'][0]['unique_id'], i = 0, j = 0)
+        complete_figure(game_id = games[3]['unique_id'], player_id = games[3]['players'][0]['unique_id'], card_id = games[3]['players'][0]['figure_cards'][0]['unique_id'], i = 2, j = 1)
+        assert False
+    except:
+        mock_repo.apply_temp_movements.assert_not_called()
+        mock_repo.discard_card.assert_not_called()
+    try:
+        complete_figure(game_id = games[3]['unique_id'], player_id = games[3]['players'][0]['unique_id'], card_id = games[3]['players'][0]['figure_cards'][0]['unique_id'], i = 0, j = 1)
         assert False
     except:
         mock_repo.apply_temp_movements.assert_not_called()
