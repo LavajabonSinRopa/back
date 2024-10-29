@@ -233,24 +233,23 @@ def figure_matches_type(figure_type, figure):
             return False
         possible_match = normalize_card(figure_card_types_hard[figure_type])
     
-    print_figure(figure)
-    print_figure(possible_match)
-
     if figure == possible_match:
         return True
     for rotation in range(3):
-        possible_match = rotate_card(possible_match)
+        possible_match = normalize_card(rotate_card(possible_match))
         if figure == possible_match:
             return True
+        print(possible_match)
 
     return False
 
 if __name__ == "__main__":
-    # for card in figure_card_types_hard:
-    #     print_figure(card)
-    #     print("--------------")
-    # for card in figure_card_types_easy:
-    #     print_figure(card)
-    #     print("--------------")
+    #printea las figuras en el orden de su codigo
+    for card in figure_card_types_easy:
+        print_figure(card)
+        print("--------------")
+    for card in figure_card_types_hard:
+        print_figure(card)
+        print("--------------")
     generate_cards()
     

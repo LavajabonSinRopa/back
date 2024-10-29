@@ -62,12 +62,10 @@ class gameRepository:
         session = Session()
         try:
             player = session.query(Player).filter_by(unique_id=player_id).one()
-            print('PLAYER FOUND')
-            print(player)
             return {
                 "unique_id": player.unique_id,
                 "name": player.name,
-                "figure_cards": [{'type': fcard.card_type, 'unique_id': fcard.unique_id, 'state': fcard.state} for fcard in player.figure_cards if fcard.state != 'not drawn'],
+                "figure_cards": [{'type': fcard.card_type, 'unique_id': fcard.unique_id, 'state': fcard.state} for fcard in player.figure_cards if not fcard.state == 'not drawn' and not fcard.state == 'discarded'],
                 "movement_cards": [{'type': mcard.card_type, 'unique_id': mcard.unique_id, 'state': mcard.state} for mcard in player.movement_cards]
             }
         except NoResultFound:
@@ -486,7 +484,6 @@ class gameRepository:
         session = Session()
         try:
             player = session.query(Player).filter_by(unique_id=player_id).one()
-            print(player.movements)
             return [{'from_x' : m.from_x, 'from_y' : m.from_y, 'to_x' : m.to_x, 'to_y' : m.to_y} for m in player.movements]
         except NoResultFound:
             raise ValueError("Game_model does not exist")

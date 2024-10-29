@@ -215,9 +215,9 @@ async def apply_moves(game_id: str,request: applyTempMovementsRequest):
 async def complete_own_figure(game_id: str,request: CompleteFigureRequest):
     try:
         complete_figure(game_id=game_id, player_id=request.player_id, card_id=request.card_id, i = request.y, j = request.x)
-        await game_socket_manager.broadcast_game(game_id,{"type":"MovesApplied","payload": get_game_status(game_id)})
+        await game_socket_manager.broadcast_game(game_id,{"type":"FigureMade","payload": get_game_status(game_id)})
     
     except:
-        raise HTTPException(status_code=403, detail="Invalid Move")
+        raise HTTPException(status_code=403, detail="Invalid Figure")
     
     return Response(status_code=200)

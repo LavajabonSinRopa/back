@@ -157,6 +157,11 @@ def pass_turn(game_id, player_id):
         while n<3:
             take_move_card(player_id,game_id)
             n+=1
+        
+        n = len(repo.get_player(player_id=player_id)['figure_cards'])
+        while n<3:
+            drawn_figure_card(player_id)
+            n+=1
 
         repo.pass_turn(game_id=game_id)
 
@@ -244,9 +249,7 @@ def make_temp_movement(game_id, player_id, card_id, from_x, from_y, to_x, to_y):
     
         if(can_move_to(from_x=from_x, from_y=from_y, to_x=to_x, to_y=to_y, card_type=card_type)):
             repo.add_movement(player_id=player_id, from_x=from_x, from_y=from_y, to_x=to_x, to_y=to_y, card_id=card_id)
-            print(repo.get_board(game_id=game_id))
             repo.swap_positions_board(game_id=game_id, x1 = from_x, y1 = from_y, x2 = to_x, y2 = to_y)
-            print(repo.get_board(game_id=game_id))
             return True
         return False
     
