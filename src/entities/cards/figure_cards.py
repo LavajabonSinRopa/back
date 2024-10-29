@@ -233,6 +233,9 @@ def figure_matches_type(figure_type, figure):
             return False
         possible_match = normalize_card(figure_card_types_hard[figure_type])
     
+    print_figure(figure)
+    print_figure(possible_match)
+
     if figure == possible_match:
         return True
     for rotation in range(3):

@@ -1,6 +1,7 @@
 from ..db.gamesRepo import repo
 from sqlalchemy.exc import NoResultFound
 import uuid
+import random
 from ..player.player_utils import drawn_figure_card, take_move_card
 from ..cards.movent_cards import can_move_to
 from ..cards.figure_cards import figure_exists, figure_matches_type
@@ -182,6 +183,9 @@ def create_figure_cards(game_id):
     # Crear cartas fáciles y difíciles
     easy_cards = [0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6]
     hard_cards = [7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 23, 24, 24]
+
+    random.shuffle(hard_cards)
+    random.shuffle(easy_cards)
 
     # Distribuir cartas fáciles
     for player in get_players_status(game_id):
