@@ -504,4 +504,18 @@ class gameRepository:
         finally:
             session.close()
 
+    @staticmethod
+    def block_card(card_id: str):
+        session = Session()
+        try:
+            # Retrieve the card
+            card = session.query(Figure_card).filter_by(unique_id=card_id).one_or_none()
+            card.state = 'blocked'
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            session.close()
+
 repo = gameRepository()

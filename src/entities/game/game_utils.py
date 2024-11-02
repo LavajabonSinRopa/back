@@ -307,6 +307,26 @@ def remove_all_movements(game_id, player_id):
     while(len(repo.get_player_movements(player_id=player_id))>0):
         remove_top_movement(game_id=game_id,player_id=player_id)
 
+def get_figure(board, i, j):
+    vis = [[False]*BOARD_LEN for _ in range(BOARD_LEN)]
+    vis[i][j] = True
+    processing = [[i,j]]
+    figure = [[i,j]]
+    color = board[i][j]
+    while(len(processing)>0):
+        square = processing[-1]
+        processing.pop()
+        x,y = square[0],square[1]
+        for d in directions:
+            nx,ny = x + d[0], y + d[1]
+            if not is_in_board(nx) or not is_in_board(ny):
+                continue
+            if not vis[nx][ny] and board[nx][ny] == color:
+                vis[nx][ny] = True
+                processing.append([nx,ny])
+                figure.append([nx,ny])
+    return figure
+
 def complete_figure(game_id, player_id, card_id, i, j):
     # confirm that player has card
     # get figure type from the card
@@ -331,24 +351,9 @@ def complete_figure(game_id, player_id, card_id, i, j):
             raise Exception("Doesn't have card")
 
         board = game['board']
-        vis = [[False]*BOARD_LEN for _ in range(BOARD_LEN)]
-        vis[i][j] = True
-        processing = [[i,j]]
-        figure = [[i,j]]
-        color = board[i][j]
-        while(len(processing)>0):
-            square = processing[-1]
-            processing.pop()
-            x,y = square[0],square[1]
-            for d in directions:
-                nx,ny = x + d[0], y + d[1]
-                if not is_in_board(nx) or not is_in_board(ny):
-                    continue
-                if not vis[nx][ny] and board[nx][ny] == color:
-                    vis[nx][ny] = True
-                    processing.append([nx,ny])
-                    figure.append([nx,ny])
         
+        figure = get_figure(board=board, i = i, j = j)
+
         if not figure_matches_type(figure_type=card_type, figure=figure):
             raise Exception("Figure doesn't match")
         
@@ -356,6 +361,49 @@ def complete_figure(game_id, player_id, card_id, i, j):
 
         # discard figure card
         repo.discard_card(card_id=card_id)
+
+        #TODO: update color prohibido
+        return True
+
+    except Exception as e:
+        raise e
+
+def block_figure(game_id, player_id, card_id, i, j):
+
+    try:
+        game = repo.get_game(game_id)
+        if player_id not in game['players']:
+            raise Exception("Not in game")
+        
+        card_type = -1
+        cards = []
+        for player in repo.get_game(game_id=game_id):
+            if(player_id==player['unique_id']):
+                continue
+            player_cards = repo.get_player(player_id=player['unique_id'])['figure_cards']
+            for card in player_cards:
+                cards.append(card)
+
+        for card in cards:
+            if card['unique_id'] == card_id:
+                card_type = card['type']
+                if card['state'] == 'blocked':
+                    raise Exception("Card is already blocked")
+                break
+        if card_type == -1:
+            raise Exception("Doesn't have card")
+
+        board = game['board']
+        
+        figure = get_figure(board=board, i = i, j = j)
+
+        if not figure_matches_type(figure_type=card_type, figure=figure):
+            raise Exception("Figure doesn't match")
+        
+        apply_temp_movements(player_id=player_id)
+
+        # block figure card
+        repo.block_card(card_id=card_id)
 
         #TODO: update color prohibido
         return True
