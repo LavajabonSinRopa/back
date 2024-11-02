@@ -245,11 +245,16 @@ def figure_matches_type(figure_type, figure):
 
 if __name__ == "__main__":
     #printea las figuras en el orden de su codigo
+    code = 0
     for card in figure_card_types_easy:
+        print("code = ", code)
+        code += 1
         print_figure(card)
         print("--------------")
     for card in figure_card_types_hard:
+        print("code = ", code)
+        code += 1
         print_figure(card)
         print("--------------")
-    generate_cards()
+    #generate_cards()
     

@@ -20,7 +20,7 @@ games = [{'unique_id': '1', 'creator': 'ME', 'state': 'waiting', 'players': ['ME
                     ['red', 'green', 'red', 'figure', 'figure', 'figure']],
           'turn': 1, 'creator': 'fbe2bf36-dc11-470e-a61e-4774b4d4aa23', 
           'players': [{'unique_id': '67ab34c4-052f-4683-be84-5886f26b864e', 'name': 'EL', 
-                       'figure_cards': [{'type': 6, 'state': 'drawn', 'unique_id': '1'}, {'type': 6, 'state': 'drawn'}, {'type': 5, 'state': 'drawn'}], 
+                       'figure_cards': [{'type': 6, 'state': 'drawn', 'unique_id': '1'}, {'type': 6, 'state': 'drawn', 'unique_id': '405'}, {'type': 21, 'state': 'drawn', 'unique_id' : '2'}], 
                        'movement_cards': [{'type': 0, 'unique_id': '9277905e-b02b-4605-a0af-4ab509c9967e', 'state': None}, {'type': 0, 'unique_id': '3d7b9a1f-bbcd-4e56-938d-e4fe15e51ddb', 'state': None}, {'type': 0, 'unique_id': 'fc2c43d9-fd5e-4654-89b4-1911157eda28', 'state': None}]}, 
                       {'unique_id': 'fbe2bf36-dc11-470e-a61e-4774b4d4aa23', 'name': 'YO', 
                        'figure_cards': [{'type': 3, 'state': 'drawn'}, {'type': 2, 'state': 'drawn'}, {'type': 2, 'state': 'drawn'}], 
@@ -211,6 +211,11 @@ def test_complete_figure_success(mock_repo):
 
     mock_repo.apply_temp_movements.assert_called_once()
     mock_repo.discard_card.assert_called_once_with(card_id='1')
+
+    assert complete_figure(game_id = games[3]['unique_id'], player_id = games[3]['players'][0]['unique_id'], card_id = games[3]['players'][0]['figure_cards'][2]['unique_id'], i = 0, j = 1)
+    
+    mock_repo.discard_card.assert_called_with(card_id='2')
+
 
 def test_complete_figure_not_in_game(mock_repo):
     mock_repo.get_game.return_value = games[4]
