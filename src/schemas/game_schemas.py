@@ -49,3 +49,9 @@ class UnmakeMoveRequest(BaseModel):
     
 class applyTempMovementsRequest(BaseModel):
     player_id: str
+
+class CompleteFigureRequest(BaseModel):
+    player_id : str
+    card_id : str
+    x : int
+    y : int

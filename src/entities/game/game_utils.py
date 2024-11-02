@@ -1,10 +1,12 @@
 from ..db.gamesRepo import repo
 from sqlalchemy.exc import NoResultFound
 import uuid
+import random
 from ..player.player_utils import drawn_figure_card, take_move_card
 from ..cards.movent_cards import can_move_to
-from ..cards.figure_cards import figure_matches
+from ..cards.figure_cards import figure_exists, figure_matches_type
 
+BOARD_LEN = 6
 
 def add_game(game_name, creator_id):
     new_game_id = repo.create_game(unique_id = str(uuid.uuid4()), name = game_name, state = "waiting", creator_id = creator_id)
@@ -155,6 +157,11 @@ def pass_turn(game_id, player_id):
         while n<3:
             take_move_card(player_id,game_id)
             n+=1
+        
+        n = len(repo.get_player(player_id=player_id)['figure_cards'])
+        while n<3:
+            drawn_figure_card(player_id)
+            n+=1
 
         repo.pass_turn(game_id=game_id)
 
@@ -181,6 +188,9 @@ def create_figure_cards(game_id):
     # Crear cartas fáciles y difíciles
     easy_cards = [0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6]
     hard_cards = [7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 23, 24, 24]
+
+    random.shuffle(hard_cards)
+    random.shuffle(easy_cards)
 
     # Distribuir cartas fáciles
     for player in get_players_status(game_id):
@@ -214,7 +224,7 @@ def start_game_by_id(game_id):
 
 def is_in_board(x):
     #TODO make global variable for board size
-    return x >= 0 and x <= 5
+    return x >= 0 and x < BOARD_LEN
 
 def make_temp_movement(game_id, player_id, card_id, from_x, from_y, to_x, to_y):
     # assumes that player is in game
@@ -239,9 +249,7 @@ def make_temp_movement(game_id, player_id, card_id, from_x, from_y, to_x, to_y):
     
         if(can_move_to(from_x=from_x, from_y=from_y, to_x=to_x, to_y=to_y, card_type=card_type)):
             repo.add_movement(player_id=player_id, from_x=from_x, from_y=from_y, to_x=to_x, to_y=to_y, card_id=card_id)
-            print(repo.get_board(game_id=game_id))
             repo.swap_positions_board(game_id=game_id, x1 = from_x, y1 = from_y, x2 = to_x, y2 = to_y)
-            print(repo.get_board(game_id=game_id))
             return True
         return False
     
@@ -274,7 +282,7 @@ def highlight_figures(board: list[list[str]]) -> list[list[str]]:
                         vis[nx][ny] = True
                         processing.append([nx,ny])
                         figure.append([nx,ny])
-            if figure_matches(figure):
+            if figure_exists(figure):
                 for square in figure:
                     board[square[0]][square[1]] = board[square[0]][square[1]].upper()
     return board
@@ -294,9 +302,66 @@ def remove_top_movement(game_id, player_id):
 def apply_temp_movements(player_id):
     repo.apply_temp_movements(player_id=player_id)
 
+# cancels all temp moves made so far
 def remove_all_movements(game_id, player_id):
     while(len(repo.get_player_movements(player_id=player_id))>0):
         remove_top_movement(game_id=game_id,player_id=player_id)
+
+def complete_figure(game_id, player_id, card_id, i, j):
+    # confirm that player has card
+    # get figure type from the card
+    # get figure from board (dfs from <i,j>)
+    # attempt to match them (include rotations)
+    # if they match, eliminate card from the players hand and make moves permanent
+
+    try:
+        game = repo.get_game(game_id)
+        if player_id not in game['players']:
+            raise Exception("Not in game")
+        
+        card_type = -1
+        cards = repo.get_player(player_id=player_id)['figure_cards']
+        for card in cards:
+            if card['unique_id'] == card_id:
+                card_type = card['type']
+                if card['state'] == 'blocked':
+                    raise Exception("Card is blocked")
+                break
+        if card_type == -1:
+            raise Exception("Doesn't have card")
+
+        board = game['board']
+        vis = [[False]*BOARD_LEN for _ in range(BOARD_LEN)]
+        vis[i][j] = True
+        processing = [[i,j]]
+        figure = [[i,j]]
+        color = board[i][j]
+        while(len(processing)>0):
+            square = processing[-1]
+            processing.pop()
+            x,y = square[0],square[1]
+            for d in directions:
+                nx,ny = x + d[0], y + d[1]
+                if not is_in_board(nx) or not is_in_board(ny):
+                    continue
+                if not vis[nx][ny] and board[nx][ny] == color:
+                    vis[nx][ny] = True
+                    processing.append([nx,ny])
+                    figure.append([nx,ny])
+        
+        if not figure_matches_type(figure_type=card_type, figure=figure):
+            raise Exception("Figure doesn't match")
+        
+        apply_temp_movements(player_id=player_id)
+
+        # discard figure card
+        repo.discard_card(card_id=card_id)
+
+        #TODO: update color prohibido
+        return True
+
+    except Exception as e:
+        raise e
 
 def delete_all():
     repo.tear_down()

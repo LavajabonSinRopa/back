@@ -6,26 +6,35 @@ import os
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 
-from entities.game.game_utils import add_game,get_games, pass_turn, add_to_game, start_game_by_id, remove_player_from_game, get_players_names, make_temp_movement, highlight_figures, remove_top_movement, apply_temp_movements
+from entities.game.game_utils import add_game,get_games, pass_turn, add_to_game, start_game_by_id, remove_player_from_game, get_players_names, make_temp_movement, highlight_figures, remove_top_movement, apply_temp_movements, complete_figure
 
 games = [{'unique_id': '1', 'creator': 'ME', 'state': 'waiting', 'players': ['ME', 'p2'], 'player_names': ['MYNAME', 'p2NAME']}, 
          {'unique_id': '2', 'creator': 'also ME', 'state': 'started', 'players': ['also ME', 'p2'], 'turn': 0},
          {'unique_id': '3', 'creator': 'also also ME', 'state': 'waiting', 'players': ['also also ME', 'p2', 'p3', 'p3']},
          {'unique_id': 'adb7026d-cf96-4bac-937b-a8106e56f160', 'name': 'GAME3', 'state': 'started', 
-          'board': [['red', 'red', 'yellow', 'blue', 'red', 'blue'], 
-                    ['blue', 'green', 'green', 'yellow', 'blue', 'red'], 
+          'board': [['figure', 'figure', 'figure', 'blue', 'red', 'blue'], 
+                    ['figure', 'green', 'green', 'yellow', 'blue', 'red'], 
                     ['blue', 'blue', 'yellow', 'yellow', 'yellow', 'green'], 
                     ['green', 'red', 'yellow', 'green', 'green', 'red'], 
-                    ['yellow', 'blue', 'red', 'yellow', 'green', 'green'], 
-                    ['red', 'blue', 'blue', 'green', 'red', 'yellow']],
+                    ['yellow', 'blue', 'red', 'yellow', 'green', 'figure'], 
+                    ['red', 'green', 'red', 'figure', 'figure', 'figure']],
           'turn': 1, 'creator': 'fbe2bf36-dc11-470e-a61e-4774b4d4aa23', 
           'players': [{'unique_id': '67ab34c4-052f-4683-be84-5886f26b864e', 'name': 'EL', 
-                       'figure_cards': [{'type': 6, 'state': 'drawn'}, {'type': 6, 'state': 'drawn'}, {'type': 5, 'state': 'drawn'}], 
+                       'figure_cards': [{'type': 6, 'state': 'drawn', 'unique_id': '1'}, {'type': 6, 'state': 'drawn', 'unique_id': '405'}, {'type': 21, 'state': 'drawn', 'unique_id' : '2'}], 
                        'movement_cards': [{'type': 0, 'unique_id': '9277905e-b02b-4605-a0af-4ab509c9967e', 'state': None}, {'type': 0, 'unique_id': '3d7b9a1f-bbcd-4e56-938d-e4fe15e51ddb', 'state': None}, {'type': 0, 'unique_id': 'fc2c43d9-fd5e-4654-89b4-1911157eda28', 'state': None}]}, 
                       {'unique_id': 'fbe2bf36-dc11-470e-a61e-4774b4d4aa23', 'name': 'YO', 
                        'figure_cards': [{'type': 3, 'state': 'drawn'}, {'type': 2, 'state': 'drawn'}, {'type': 2, 'state': 'drawn'}], 
                        'movement_cards': [{'type': 0, 'unique_id': '7bf11638-26cd-45ce-8812-98810ba30776', 'state': None}, {'type': 0, 'unique_id': 'b4b20c32-1156-4ab1-9f80-bd57093e89e4', 'state': None}, {'type': 0, 'unique_id': 'd4e79bc8-e840-4ea3-9558-1baa681b4599', 'state': None}],
-                       'movements': [{'from_x': 0, 'from_y': 0, 'to_x': 5, 'to_y': 5}]}]}
+                       'movements': [{'from_x': 0, 'from_y': 0, 'to_x': 5, 'to_y': 5}]}]},
+        {'unique_id': 'adb7026d-cf96-4bac-937b-a8106e56f160', 'name': 'GAME3', 'state': 'started', 
+          'board': [['figure', 'figure', 'figure', 'blue', 'red', 'blue'], 
+                    ['figure', 'figure', 'green', 'yellow', 'blue', 'red'], 
+                    ['blue', 'blue', 'yellow', 'yellow', 'yellow', 'green'], 
+                    ['green', 'red', 'yellow', 'green', 'green', 'red'], 
+                    ['yellow', 'blue', 'red', 'yellow', 'green', 'figure'], 
+                    ['red', 'green', 'red', 'figure', 'figure', 'figure']],
+          'turn': 1, 'creator': 'fbe2bf36-dc11-470e-a61e-4774b4d4aa23', 
+          'players': ['67ab34c4-052f-4683-be84-5886f26b864e']}
 ]
 
 # FUNCTIONS THAT WILL BE PATCHED
@@ -193,6 +202,66 @@ def test_highlight_figures():
 
     board = [['p','p','p','p','p','p'],['p','p','p','p','p','p'],['p','p','p','p','p','p'],['p','p','p','p','p','p'],['p','p','p','p','p','p'],['p','p','p','p','p','p']]
     assert board == highlight_figures(board)
+
+def test_complete_figure_success(mock_repo):
+    mock_repo.get_game.return_value = games[4]
+    mock_repo.get_player.return_value = games[3]['players'][0]
+
+    assert complete_figure(game_id = games[3]['unique_id'], player_id = games[3]['players'][0]['unique_id'], card_id = games[3]['players'][0]['figure_cards'][0]['unique_id'], i = 5, j = 5)
+
+    mock_repo.apply_temp_movements.assert_called_once()
+    mock_repo.discard_card.assert_called_once_with(card_id='1')
+
+    assert complete_figure(game_id = games[3]['unique_id'], player_id = games[3]['players'][0]['unique_id'], card_id = games[3]['players'][0]['figure_cards'][2]['unique_id'], i = 0, j = 1)
+    
+    mock_repo.discard_card.assert_called_with(card_id='2')
+
+
+def test_complete_figure_not_in_game(mock_repo):
+    mock_repo.get_game.return_value = games[4]
+    mock_repo.get_player.return_value = games[3]['players'][0]
+    try:
+        complete_figure(game_id = games[3]['unique_id'], player_id = "No estoy en la partida", card_id = games[3]['players'][0]['figure_cards'][0]['unique_id'], i = 5, j = 5)
+        assert False
+    except:
+        mock_repo.apply_temp_movements.assert_not_called()
+        mock_repo.discard_card.assert_not_called()
+
+def test_complete_figure_no_card(mock_repo):
+    mock_repo.get_game.return_value = games[4]
+    mock_repo.get_player.return_value = games[3]['players'][0]
+    try:
+        complete_figure(game_id = games[3]['unique_id'], player_id = games[3]['players'][0]['unique_id'], card_id = "No soy una carta", i = 5, j = 5)
+        assert False
+    except:
+        mock_repo.apply_temp_movements.assert_not_called()
+        mock_repo.discard_card.assert_not_called()
+
+def test_complete_figure_out_of_bounds(mock_repo):
+    mock_repo.get_game.return_value = games[4]
+    mock_repo.get_player.return_value = games[3]['players'][0]
+    try:
+        complete_figure(game_id = games[3]['unique_id'], player_id = games[3]['players'][0]['unique_id'], card_id = games[3]['players'][0]['figure_cards'][0]['unique_id'], i = 31, j = -5)
+        assert False
+    except:
+        mock_repo.apply_temp_movements.assert_not_called()
+        mock_repo.discard_card.assert_not_called()
+
+def test_complete_figure_failure(mock_repo):
+    mock_repo.get_game.return_value = games[4]
+    mock_repo.get_player.return_value = games[3]['players'][0]
+    try:
+        complete_figure(game_id = games[3]['unique_id'], player_id = games[3]['players'][0]['unique_id'], card_id = games[3]['players'][0]['figure_cards'][0]['unique_id'], i = 2, j = 1)
+        assert False
+    except:
+        mock_repo.apply_temp_movements.assert_not_called()
+        mock_repo.discard_card.assert_not_called()
+    try:
+        complete_figure(game_id = games[3]['unique_id'], player_id = games[3]['players'][0]['unique_id'], card_id = games[3]['players'][0]['figure_cards'][0]['unique_id'], i = 0, j = 1)
+        assert False
+    except:
+        mock_repo.apply_temp_movements.assert_not_called()
+        mock_repo.discard_card.assert_not_called()
 
 if __name__ == "__main__":
     unittest.main()
