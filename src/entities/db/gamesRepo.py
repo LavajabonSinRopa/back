@@ -74,6 +74,19 @@ class gameRepository:
             session.close()
 
     @staticmethod
+    def get_player_figure_cards(player_id : str) -> dict:
+        session = Session()
+        try:
+            player = session.query(Player).filter_by(unique_id=player_id).one()
+            return {
+                "figure_cards": [{'type': fcard.card_type, 'unique_id': fcard.unique_id, 'state': fcard.state} for fcard in player.figure_cards]
+            }
+        except NoResultFound:
+            raise ValueError("Game_model does not exist")
+        finally:
+            session.close()
+
+    @staticmethod
     def get_games() -> List[dict]:
         session = Session()
         try:

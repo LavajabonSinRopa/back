@@ -369,7 +369,9 @@ def complete_figure(game_id, player_id, card_id, i, j):
 
         
         # Check if player ran out of cards after discarding
-        remaining_cards = len(repo.get_player(player_id=player_id)['figure_cards'])
+        player_cards = repo.get_player_figure_cards(player_id=player_id)['figure_cards']
+        remaining_cards = len([fcard for fcard in player_cards if fcard["state"] != "discarded"])
+
         if remaining_cards <= 0:
             return FigureResult.PLAYER_WON
             
