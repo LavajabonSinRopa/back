@@ -381,13 +381,13 @@ def block_figure(game_id, player_id, card_id, i, j):
 
         card_type = -1
         cards = []
-        for player in repo.get_game(game_id=game_id):
+        for player in repo.get_game_status(game_id=game_id)['players']:
             if(player_id==player['unique_id']):
                 continue
             player_cards = repo.get_player(player_id=player['unique_id'])['figure_cards']
             for card in player_cards:
                 cards.append(card)
-
+        
         for card in cards:
             if card['unique_id'] == card_id:
                 card_type = card['type']
