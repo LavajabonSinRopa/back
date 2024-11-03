@@ -338,6 +338,8 @@ def complete_figure(game_id, player_id, card_id, i, j):
         game = repo.get_game(game_id)
         if player_id not in game['players']:
             raise Exception("Not in game")
+        if not is_players_turn(game_id=game_id, player_id=player_id):
+            raise Exception("Not your turn")
         
         card_type = -1
         cards = repo.get_player(player_id=player_id)['figure_cards']
@@ -374,7 +376,9 @@ def block_figure(game_id, player_id, card_id, i, j):
         game = repo.get_game(game_id)
         if player_id not in game['players']:
             raise Exception("Not in game")
-        
+        if not is_players_turn(game_id=game_id, player_id=player_id):
+            raise Exception("Not your turn")
+
         card_type = -1
         cards = []
         for player in repo.get_game(game_id=game_id):
@@ -391,7 +395,7 @@ def block_figure(game_id, player_id, card_id, i, j):
                     raise Exception("Card is already blocked")
                 break
         if card_type == -1:
-            raise Exception("Doesn't have card")
+            raise Exception("Card non existent")
 
         board = game['board']
         
