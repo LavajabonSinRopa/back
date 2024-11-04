@@ -59,11 +59,9 @@ def get_game_status(game_id):
     
     board = highlight_figures(game['board'])
 
-    #resaltar casillas usadas en movimientos temporales --> primera letra en mayuscula
+    #resaltar casillas usadas en movimientos temporales --> % al final del color
     player_id = game['players'][game['turn']%len(game['players'])]
     moves = repo.get_player_movements(player_id=player_id)
-
-    print(moves)
 
     for move in moves:
         if board[move['from_y']][move['from_x']][-1] != '%':
@@ -382,7 +380,7 @@ def complete_figure(game_id, player_id, card_id, i, j):
             
         cards_in_hand = repo.get_player(player_id=player_id)['figure_cards']
         if(len(cards_in_hand)==1):
-            repo.unblock_card(card_id=cards_in_hand['unique_id'])
+            repo.unblock_card(card_id=cards_in_hand[0]['unique_id'])
         return FigureResult.COMPLETED
 
     except Exception as e:

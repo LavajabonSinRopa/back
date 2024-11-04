@@ -227,6 +227,7 @@ async def complete_own_figure(game_id: str, request: CompleteFigureRequest):
         return Response(status_code=200)
         
     except Exception as e:
+        print(e)
         raise HTTPException(status_code=403, detail="Invalid Figure")
     
     return Response(status_code=200)
