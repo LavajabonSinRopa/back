@@ -394,22 +394,24 @@ def block_figure(game_id, player_id, card_id, i, j):
         if not is_players_turn(game_id=game_id, player_id=player_id):
             raise Exception("Not your turn")
         card_type = -1
-        cards = []
+        owner_blocked = False
         for player in repo.get_game(game_id=game_id)['players']:
             if(player_id==player):
                 continue
             player_cards = repo.get_player(player_id=player)['figure_cards']
             for card in player_cards:
-                cards.append(card)
+                if card['unique_id'] == card_id:
+                    card_type = card['type']
+                    if card['state'] == 'blocked':
+                        raise Exception("Card is already blocked")
+                if card['state']== 'blocked':
+                    owner_blocked = True
         
-        for card in cards:
-            if card['unique_id'] == card_id:
-                card_type = card['type']
-                if card['state'] == 'blocked':
-                    raise Exception("Card is already blocked")
-                break
         if card_type == -1:
             raise Exception("Card non existent")
+
+        if owner_blocked:
+            raise Exception("Owner of the card has a blocked card already")
 
         board = game['board']
         
