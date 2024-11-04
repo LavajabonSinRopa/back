@@ -352,8 +352,8 @@ def complete_figure(game_id, player_id, card_id, i, j):
         for card in cards:
             if card['unique_id'] == card_id:
                 card_type = card['type']
-            if card['state'] == 'blocked':
-                raise Exception("One of your cards is blocked!")
+                if card['state'] == 'blocked':
+                    raise Exception("This card is already blocked!")
         if card_type == -1:
             raise Exception("Doesn't have card")
 
