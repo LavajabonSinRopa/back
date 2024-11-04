@@ -22,7 +22,6 @@ class JoinGameRequest(BaseModel):
 # Respuesta de POST a games/<game_id>/join
 class JoinGameResponse(BaseModel):
     player_id: str
-    password: str = ""
 
 class GameInResponse(BaseModel):
     game_id: str
