@@ -92,6 +92,11 @@ def mock_complete_figure():
     with patch('interfaces.game_endpoints.complete_figure') as mock:
         yield mock
 
+@pytest.fixture
+def mock_block_figure():
+    with patch('interfaces.game_endpoints.block_figure') as mock:
+        yield mock
+
 def test_create_game_success(mock_add_player, mock_add_game, mock_game_socket_manager, mock_get_games):
     # Arrange
     mock_add_player.return_value = '1'  # Mock the player ID
@@ -438,6 +443,29 @@ def test_complete_figure_failure(mock_get_game_status, mock_game_socket_manager,
 
     assert response.status_code == 403
     mock_complete_figure.assert_called_once_with(game_id='Test_Game', player_id='Test_Player', card_id='test_card', i=4, j=1)
+    mock_game_socket_manager.broadcast_game.assert_not_called()
+
+def test_block_figure_success(mock_get_game_status, mock_game_socket_manager, mock_block_figure):
+    mock_game_socket_manager.broadcast_game = AsyncMock()
+    mock_get_game_status.return_value = []
+
+    request_data = {'player_id': 'Test_Player', 'x' : 1, 'y' : 4, 'card_id' : 'test_card'}
+    response = client.post("/games/Test_Game/blockFigure", json=request_data)
+
+    assert response.status_code == 200
+    mock_block_figure.assert_called_once_with(game_id='Test_Game', player_id='Test_Player', card_id='test_card', i=4, j=1)
+    mock_game_socket_manager.broadcast_game.assert_called_once()
+
+def test_block_figure_failure(mock_get_game_status, mock_game_socket_manager, mock_block_figure):
+    mock_game_socket_manager.broadcast_game = AsyncMock()
+    mock_get_game_status.return_value = []
+    mock_block_figure.side_effect = Exception("test")
+
+    request_data = {'player_id': 'Test_Player', 'x' : 1, 'y' : 4, 'card_id' : 'test_card'}
+    response = client.post("/games/Test_Game/blockFigure", json=request_data)
+
+    assert response.status_code == 403
+    mock_block_figure.assert_called_once_with(game_id='Test_Game', player_id='Test_Player', card_id='test_card', i=4, j=1)
     mock_game_socket_manager.broadcast_game.assert_not_called()
 
 if __name__ == "__main__":

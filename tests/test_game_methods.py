@@ -6,7 +6,7 @@ import os
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 
-from entities.game.game_utils import add_game,get_games, pass_turn, add_to_game, start_game_by_id, remove_player_from_game, get_players_names, make_temp_movement, highlight_figures, remove_top_movement, apply_temp_movements, complete_figure
+from entities.game.game_utils import add_game,get_games, pass_turn, add_to_game, start_game_by_id, remove_player_from_game, get_players_names, make_temp_movement, highlight_figures, remove_top_movement, apply_temp_movements, complete_figure, block_figure
 
 games = [{'unique_id': '1', 'creator': 'ME', 'state': 'waiting', 'players': ['ME', 'p2'], 'player_names': ['MYNAME', 'p2NAME']}, 
          {'unique_id': '2', 'creator': 'also ME', 'state': 'started', 'players': ['also ME', 'p2'], 'turn': 0},
@@ -23,7 +23,7 @@ games = [{'unique_id': '1', 'creator': 'ME', 'state': 'waiting', 'players': ['ME
                        'figure_cards': [{'type': 6, 'state': 'drawn', 'unique_id': '1'}, {'type': 6, 'state': 'drawn', 'unique_id': '405'}, {'type': 21, 'state': 'drawn', 'unique_id' : '2'}], 
                        'movement_cards': [{'type': 0, 'unique_id': '9277905e-b02b-4605-a0af-4ab509c9967e', 'state': None}, {'type': 0, 'unique_id': '3d7b9a1f-bbcd-4e56-938d-e4fe15e51ddb', 'state': None}, {'type': 0, 'unique_id': 'fc2c43d9-fd5e-4654-89b4-1911157eda28', 'state': None}]}, 
                       {'unique_id': 'fbe2bf36-dc11-470e-a61e-4774b4d4aa23', 'name': 'YO', 
-                       'figure_cards': [{'type': 3, 'state': 'drawn'}, {'type': 2, 'state': 'drawn'}, {'type': 2, 'state': 'drawn'}], 
+                       'figure_cards': [{'type': 6, 'state': 'drawn', 'unique_id': '1'}, {'type': 6, 'state': 'drawn', 'unique_id': '405'}, {'type': 21, 'state': 'drawn', 'unique_id' : '2'}], 
                        'movement_cards': [{'type': 0, 'unique_id': '7bf11638-26cd-45ce-8812-98810ba30776', 'state': None}, {'type': 0, 'unique_id': 'b4b20c32-1156-4ab1-9f80-bd57093e89e4', 'state': None}, {'type': 0, 'unique_id': 'd4e79bc8-e840-4ea3-9558-1baa681b4599', 'state': None}],
                        'movements': [{'from_x': 0, 'from_y': 0, 'to_x': 5, 'to_y': 5}]}]},
         {'unique_id': 'adb7026d-cf96-4bac-937b-a8106e56f160', 'name': 'GAME3', 'state': 'started', 
@@ -262,6 +262,67 @@ def test_complete_figure_failure(mock_repo):
     except:
         mock_repo.apply_temp_movements.assert_not_called()
         mock_repo.discard_card.assert_not_called()
+
+def test_block_figure_success(mock_repo):
+    mock_repo.get_game.return_value = games[4]
+    mock_repo.get_game_status.return_value = games[3]
+    mock_repo.get_player.return_value = games[3]['players'][0]
+
+    assert block_figure(game_id = games[3]['unique_id'], player_id = games[3]['players'][0]['unique_id'], card_id = games[3]['players'][1]['figure_cards'][0]['unique_id'], i = 5, j = 5)
+
+    mock_repo.apply_temp_movements.assert_called_once()
+    mock_repo.block_card.assert_called_once_with(card_id='1')
+
+    assert block_figure(game_id = games[3]['unique_id'], player_id = games[3]['players'][0]['unique_id'], card_id = games[3]['players'][1]['figure_cards'][2]['unique_id'], i = 0, j = 1)
+    
+    mock_repo.block_card.assert_called_with(card_id='2')
+
+
+def test_block_figure_not_in_game(mock_repo):
+    mock_repo.get_game.return_value = games[4]
+    mock_repo.get_player.return_value = games[3]['players'][0]
+    try:
+        block_figure(game_id = games[3]['unique_id'], player_id = "No estoy en la partida", card_id = games[3]['players'][1]['figure_cards'][0]['unique_id'], i = 5, j = 5)
+        assert False
+    except:
+        mock_repo.apply_temp_movements.assert_not_called()
+        mock_repo.block_card.assert_not_called()
+
+def test_block_figure_no_card(mock_repo):
+    mock_repo.get_game.return_value = games[4]
+    mock_repo.get_player.return_value = games[3]['players'][0]
+    try:
+        block_figure(game_id = games[3]['unique_id'], player_id = games[3]['players'][0]['unique_id'], card_id = "No soy una carta", i = 5, j = 5)
+        assert False
+    except:
+        mock_repo.apply_temp_movements.assert_not_called()
+        mock_repo.block_card.assert_not_called()
+
+def test_block_figure_out_of_bounds(mock_repo):
+    mock_repo.get_game.return_value = games[4]
+    mock_repo.get_player.return_value = games[3]['players'][0]
+    try:
+        block_figure(game_id = games[3]['unique_id'], player_id = games[3]['players'][0]['unique_id'], card_id = games[3]['players'][1]['figure_cards'][0]['unique_id'], i = 31, j = -5)
+        assert False
+    except:
+        mock_repo.apply_temp_movements.assert_not_called()
+        mock_repo.block_card.assert_not_called()
+
+def test_block_figure_failure(mock_repo):
+    mock_repo.get_game.return_value = games[4]
+    mock_repo.get_player.return_value = games[3]['players'][0]
+    try:
+        block_figure(game_id = games[3]['unique_id'], player_id = games[3]['players'][0]['unique_id'], card_id = games[3]['players'][1]['figure_cards'][0]['unique_id'], i = 2, j = 1)
+        assert False
+    except:
+        mock_repo.apply_temp_movements.assert_not_called()
+        mock_repo.block_card.assert_not_called()
+    try:
+        block_figure(game_id = games[3]['unique_id'], player_id = games[3]['players'][0]['unique_id'], card_id = games[3]['players'][1]['figure_cards'][0]['unique_id'], i = 0, j = 1)
+        assert False
+    except:
+        mock_repo.apply_temp_movements.assert_not_called()
+        mock_repo.block_card.assert_not_called()
 
 if __name__ == "__main__":
     unittest.main()
