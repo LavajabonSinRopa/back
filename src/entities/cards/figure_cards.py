@@ -239,7 +239,6 @@ def figure_matches_type(figure_type, figure):
         possible_match = normalize_card(rotate_card(possible_match))
         if figure == possible_match:
             return True
-        print(possible_match)
 
     return False
 

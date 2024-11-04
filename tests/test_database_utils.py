@@ -527,6 +527,21 @@ class test_games_Repo(unittest.TestCase):
         repo.block_card(card_id = card_id)
         assert repo.get_card(card_id=card_id)['state'] == 'blocked'
 
+    def test_unblock_card(self):
+        pid = str(uuid.uuid4())
+        gid = str(uuid.uuid4())
+        repo.create_player(name="MESSI",unique_id=pid)
+        repo.create_game(unique_id=gid,name = "FUNALDELMUNDIAL",state="started",creator_id=pid)
+        repo.add_player_to_game(player_id=pid,game_id=gid)
+        repo.create_card(card_type=2,card_kind='figure',player_id=pid,game_id=gid,state="not drawn")
+        repo.drawn_figure_card(player_id=pid)
+        assert repo.get_player(pid)['figure_cards'][0]['state'] == "drawn"
+        card_id = repo.get_player(player_id = pid)['figure_cards'][0]['unique_id']
+        repo.block_card(card_id = card_id)
+        assert repo.get_card(card_id=card_id)['state'] == 'blocked'
+        repo.unblock_card(card_id=card_id)
+        assert repo.get_card(card_id=card_id)['state'] == 'drawn'
+
 if __name__ == "__main__":
     unittest.main()
     repo.tear_down()

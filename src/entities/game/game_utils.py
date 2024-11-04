@@ -166,8 +166,13 @@ def pass_turn(game_id, player_id):
             take_move_card(player_id,game_id)
             n+=1
         
-        n = len(repo.get_player(player_id=player_id)['figure_cards'])
-        while n<3:
+        cards_in_hand = repo.get_player(player_id=player_id)['figure_cards']
+        is_blocked = False
+        for card in cards_in_hand:
+            if card['state'] == 'blocked':
+                is_blocked = True
+        n = len(cards_in_hand)
+        while n<3 and not is_blocked:
             drawn_figure_card(player_id)
             n+=1
 
@@ -336,11 +341,6 @@ def get_figure(board, i, j):
     return figure
 
 def complete_figure(game_id, player_id, card_id, i, j):
-    # confirm that player has card
-    # get figure type from the card
-    # get figure from board (dfs from <i,j>)
-    # attempt to match them (include rotations)
-    # if they match, eliminate card from the players hand and make moves permanent
 
     try:
         game = repo.get_game(game_id)
@@ -354,15 +354,15 @@ def complete_figure(game_id, player_id, card_id, i, j):
         for card in cards:
             if card['unique_id'] == card_id:
                 card_type = card['type']
-                if card['state'] == 'blocked':
-                    raise Exception("Card is blocked")
-                break
+            if card['state'] == 'blocked':
+                raise Exception("One of your cards is blocked!")
         if card_type == -1:
             raise Exception("Doesn't have card")
 
         board = game['board']
         figure = get_figure(board=board, i = i, j = j)
 
+        #TODO: check color prohibido 
         if not figure_matches_type(figure_type=card_type, figure=figure):
             raise Exception("Figure doesn't match")
 
@@ -380,6 +380,9 @@ def complete_figure(game_id, player_id, card_id, i, j):
         if remaining_cards <= 0:
             return FigureResult.PLAYER_WON
             
+        cards_in_hand = repo.get_player(player_id=player_id)['figure_cards']
+        if(len(cards_in_hand)==1):
+            repo.unblock_card(card_id=cards_in_hand['unique_id'])
         return FigureResult.COMPLETED
 
     except Exception as e:
@@ -416,6 +419,7 @@ def block_figure(game_id, player_id, card_id, i, j):
         
         figure = get_figure(board=board, i = i, j = j)
 
+        #TODO: check color prohibido
         if not figure_matches_type(figure_type=card_type, figure=figure):
             raise Exception("Figure doesn't match")
         
