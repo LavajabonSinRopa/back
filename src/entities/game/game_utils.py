@@ -393,12 +393,14 @@ def block_figure(game_id, player_id, card_id, i, j):
             raise Exception("Not in game")
         if not is_players_turn(game_id=game_id, player_id=player_id):
             raise Exception("Not your turn")
+        
         card_type = -1
         owner_blocked = False
         for player in repo.get_game(game_id=game_id)['players']:
             if(player_id==player):
                 continue
             player_cards = repo.get_player(player_id=player)['figure_cards']
+            print(player_cards)
             for card in player_cards:
                 if card['unique_id'] == card_id:
                     card_type = card['type']

@@ -34,7 +34,7 @@ games = [{'unique_id': '1', 'creator': 'ME', 'state': 'waiting', 'players': ['ME
                     ['yellow', 'blue', 'red', 'yellow', 'green', 'figure'], 
                     ['red', 'green', 'red', 'figure', 'figure', 'figure']],
           'turn': 1, 'creator': 'fbe2bf36-dc11-470e-a61e-4774b4d4aa23', 
-          'players': ['67ab34c4-052f-4683-be84-5886f26b864e']}
+          'players': ['lali','67ab34c4-052f-4683-be84-5886f26b864e']}
 ]
 
 # FUNCTIONS THAT WILL BE PATCHED
@@ -266,7 +266,7 @@ def test_complete_figure_failure(mock_repo):
 def test_block_figure_success(mock_repo):
     mock_repo.get_game.return_value = games[4]
     mock_repo.get_game_status.return_value = games[3]
-    mock_repo.get_player.return_value = games[3]['players'][0]
+    mock_repo.get_player.return_value = games[3]['players'][1]
 
     assert block_figure(game_id = games[3]['unique_id'], player_id = games[3]['players'][0]['unique_id'], card_id = games[3]['players'][1]['figure_cards'][0]['unique_id'], i = 5, j = 5)
 
