@@ -6,6 +6,8 @@ from pydantic import BaseModel
 class CreateGameRequest(BaseModel):
     game_name: str
     player_name: str
+    password: str = None
+    
 
 # Formato de respuesta de POST a /games
 class CreateGameResponse(BaseModel):

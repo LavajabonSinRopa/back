@@ -16,8 +16,8 @@ class FigureResult(Enum):
     PLAYER_WON = 2
 
 
-def add_game(game_name, creator_id):
-    new_game_id = repo.create_game(unique_id = str(uuid.uuid4()), name = game_name, state = "waiting", creator_id = creator_id)
+def add_game(game_name, creator_id, password = None):
+    new_game_id = repo.create_game(unique_id = str(uuid.uuid4()), name = game_name, state = "waiting", creator_id = creator_id, password = password)
     #Creator_id is added as player
     repo.add_player_to_game(player_id=creator_id, game_id=new_game_id)
     return new_game_id

@@ -48,6 +48,29 @@ class test_games_Repo(unittest.TestCase):
         mock_session.rollback.assert_called_once()
         mock_session.close.assert_called_once()
     
+    def test_create_game_public(self):
+        pid = str(uuid.uuid4())
+        gid = str(uuid.uuid4())
+        repo.create_game(unique_id=gid,name = "FUNALDELMUNDIAL",state="started",creator_id=pid)
+        game = repo.get_game(game_id=gid)
+        assert game['type'] == 'public'
+    
+    def test_create_game_public2(self):
+        pid = str(uuid.uuid4())
+        gid = str(uuid.uuid4())
+        repo.create_game(unique_id=gid,name = "FUNALDELMUNDIAL",state="started",creator_id=pid, password = "")
+        game = repo.get_game(game_id=gid)
+        assert game['type'] == 'public'
+    
+    
+    def test_create_game_private(self):
+        pid = str(uuid.uuid4())
+        gid = str(uuid.uuid4())
+        repo.create_game(unique_id=gid,name = "FUNALDELMUNDIAL",state="started",creator_id=pid, password = "diegomaradona")
+        game = repo.get_game(game_id=gid)
+        assert game['type'] == 'private'
+    
+    
     def test_create_get_join(self):
         repo.tear_down()
         player_ids = []

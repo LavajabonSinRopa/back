@@ -116,9 +116,35 @@ def test_create_game_success(mock_add_player, mock_add_game, mock_game_socket_ma
     assert response.status_code == 200
     assert response.json() == {"game_id": '42', "player_id": '1'}
     mock_add_player.assert_called_once_with(player_name="Test Player")
-    mock_add_game.assert_called_once_with(game_name="Test Game", creator_id='1')
+    mock_add_game.assert_called_once_with(game_name="Test Game", creator_id='1', password = None)
     mock_game_socket_manager.create_game_map.assert_called_once_with('42')
     mock_game_socket_manager.join_player_to_game_map.assert_called_once_with('42', '1')
+
+def test_create_game_success_private(mock_add_player, mock_add_game, mock_game_socket_manager, mock_get_games):
+    # Arrange
+    mock_add_player.return_value = '1'  # Mock the player ID
+    mock_add_game.return_value = '42'  # Mock the game ID
+    mock_get_games.return_value = []  # Return an empty list for created games
+    
+    # Create a valid request
+    request_data = {
+        "game_name": "Test Game",
+        "player_name": "Test Player",
+        "password": "1234"
+    }
+
+    # Act
+    response = client.post("/games", json=request_data)
+
+    # Assert
+    assert response.status_code == 200
+    assert response.json() == {"game_id": '42', "player_id": '1'}
+    mock_add_player.assert_called_once_with(player_name="Test Player")
+    mock_add_game.assert_called_once_with(game_name="Test Game", creator_id='1', password = "1234")
+    mock_game_socket_manager.create_game_map.assert_called_once_with('42')
+    mock_game_socket_manager.join_player_to_game_map.assert_called_once_with('42', '1')
+
+
 
 def test_create_game_empty_name(mock_add_player, mock_add_game, mock_game_socket_manager, mock_get_games):
     
