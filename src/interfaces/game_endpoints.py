@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, Response
 from entities.game.game_utils import (add_game, get_games, get_game_by_id, 
                                       add_to_game, remove_player_from_game, pass_turn,
                                       start_game_by_id,get_game_status,is_players_turn,make_temp_movement,
-                                      remove_top_movement, apply_temp_movements, complete_figure, block_figure)
+                                      remove_top_movement, apply_temp_movements, complete_figure, FigureResult, block_figure)
 
 from entities.player.player_utils import add_player
 from schemas.game_schemas import (CreateGameRequest, CreateGameResponse, 
@@ -212,12 +212,21 @@ async def apply_moves(game_id: str,request: applyTempMovementsRequest):
     return Response(status_code=200)
         
 @router.post("/{game_id}/completeFigure")
-async def complete_own_figure(game_id: str,request: CompleteFigureRequest):
+async def complete_own_figure(game_id: str, request: CompleteFigureRequest):
     try:
-        complete_figure(game_id=game_id, player_id=request.player_id, card_id=request.card_id, i = request.y, j = request.x)
-        await game_socket_manager.broadcast_game(game_id,{"type":"FigureMade","payload": get_game_status(game_id)})
-    
-    except:
+        result = complete_figure(game_id=game_id, player_id=request.player_id, card_id=request.card_id, i = request.y, j = request.x)
+        
+        if result == FigureResult.PLAYER_WON:
+            game = get_game_by_id(game_id)
+            winner_index = game["players"].index(request.player_id)
+            winner_name = game["player_names"][winner_index]
+            await game_socket_manager.broadcast_game(game_id,{"type":"GameWon","payload": {'player_id' : request.player_id, 'player_name': winner_name}})
+        else:  # FigureResult.COMPLETED
+            await game_socket_manager.broadcast_game(game_id,{"type":"FigureMade","payload": get_game_status(game_id)})
+        
+        return Response(status_code=200)
+        
+    except Exception as e:
         raise HTTPException(status_code=403, detail="Invalid Figure")
     
     return Response(status_code=200)

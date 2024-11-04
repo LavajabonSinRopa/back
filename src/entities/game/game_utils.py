@@ -1,3 +1,4 @@
+from enum import Enum
 from ..db.gamesRepo import repo
 from sqlalchemy.exc import NoResultFound
 import uuid
@@ -7,6 +8,13 @@ from ..cards.movent_cards import can_move_to
 from ..cards.figure_cards import figure_exists, figure_matches_type
 
 BOARD_LEN = 6
+
+
+class FigureResult(Enum):
+    INVALID = 0
+    COMPLETED = 1
+    PLAYER_WON = 2
+
 
 def add_game(game_name, creator_id):
     new_game_id = repo.create_game(unique_id = str(uuid.uuid4()), name = game_name, state = "waiting", creator_id = creator_id)
@@ -353,19 +361,26 @@ def complete_figure(game_id, player_id, card_id, i, j):
             raise Exception("Doesn't have card")
 
         board = game['board']
-        
         figure = get_figure(board=board, i = i, j = j)
 
         if not figure_matches_type(figure_type=card_type, figure=figure):
             raise Exception("Figure doesn't match")
-        
-        apply_temp_movements(player_id=player_id)
 
+        apply_temp_movements(player_id=player_id)
         # discard figure card
         repo.discard_card(card_id=card_id)
 
         #TODO: update color prohibido
-        return True
+
+        
+        # Check if player ran out of cards after discarding
+        player_cards = repo.get_player_figure_cards(player_id=player_id)['figure_cards']
+        remaining_cards = len([fcard for fcard in player_cards if fcard["state"] != "discarded"])
+
+        if remaining_cards <= 0:
+            return FigureResult.PLAYER_WON
+            
+        return FigureResult.COMPLETED
 
     except Exception as e:
         raise e

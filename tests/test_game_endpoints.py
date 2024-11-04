@@ -9,6 +9,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 's
 
 import main
 from entities.game import game_utils
+from entities.game.game_utils import FigureResult
 from entities.player import player_utils
 from interfaces import SocketManagers
 
@@ -404,17 +405,33 @@ def test_apply_move_failure_no_turn(mock_get_game_status, mock_game_socket_manag
     mock_apply_temp_movements.assert_not_called()
     mock_game_socket_manager.broadcast_game.assert_not_called()
     mock_get_game_status.assert_not_called()
-    
-def test_complete_figure_success(mock_get_game_status, mock_game_socket_manager, mock_complete_figure):
+
+
+def test_complete_figure_player_wins(mock_get_game_status, mock_game_socket_manager, mock_complete_figure, mock_get_game_by_id):
     mock_game_socket_manager.broadcast_game = AsyncMock()
     mock_get_game_status.return_value = []
+    mock_complete_figure.return_value = FigureResult.PLAYER_WON  
+    mock_get_game_by_id.return_value = {"players": ["Test_Player", "Player2"],"player_names": ["Winner", "Loser"]}
 
     request_data = {'player_id': 'Test_Player', 'x' : 1, 'y' : 4, 'card_id' : 'test_card'}
     response = client.post("/games/Test_Game/completeFigure", json=request_data)
 
     assert response.status_code == 200
     mock_complete_figure.assert_called_once_with(game_id='Test_Game', player_id='Test_Player', card_id='test_card', i=4, j=1)
-    mock_game_socket_manager.broadcast_game.assert_called_once()
+    mock_get_game_by_id.assert_called_once_with('Test_Game')
+    mock_game_socket_manager.broadcast_game.assert_called_once_with('Test_Game',{"type":"GameWon","payload": {'player_id' : 'Test_Player', 'player_name': 'Winner'}})
+
+def test_complete_figure_success(mock_get_game_status, mock_game_socket_manager, mock_complete_figure):
+    mock_game_socket_manager.broadcast_game = AsyncMock()
+    mock_get_game_status.return_value = []
+    mock_complete_figure.return_value = FigureResult.COMPLETED
+
+    request_data = {'player_id': 'Test_Player', 'x' : 1, 'y' : 4, 'card_id' : 'test_card'}
+    response = client.post("/games/Test_Game/completeFigure", json=request_data)
+
+    assert response.status_code == 200
+    mock_complete_figure.assert_called_once_with(game_id='Test_Game', player_id='Test_Player', card_id='test_card', i=4, j=1)
+    mock_game_socket_manager.broadcast_game.assert_called_once_with('Test_Game',{"type":"FigureMade","payload": []})
 
 def test_complete_figure_failure(mock_get_game_status, mock_game_socket_manager, mock_complete_figure):
     mock_game_socket_manager.broadcast_game = AsyncMock()

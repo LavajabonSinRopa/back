@@ -128,6 +128,37 @@ class test_games_Repo(unittest.TestCase):
 
         # Ver que se llama close()
         mock_session.close.assert_called_once()
+    
+    def test_get_player_figure_cards(self):
+        repo.tear_down()
+        player_id = str(uuid.uuid4())
+
+        repo.create_player(name="MESSI", unique_id=player_id)
+        figure_cards = repo.get_player_figure_cards(player_id=player_id)
+        
+        assert 'figure_cards' in figure_cards
+        assert isinstance(figure_cards['figure_cards'], list)
+        for card in figure_cards['figure_cards']:
+            assert 'type' in card
+            assert 'unique_id' in card
+            assert 'state' in card
+
+    @patch('entities.db.gamesRepo.Session')
+    def test_get_player_figure_cards_no_result(self, MockSession):
+        mock_session = MagicMock()
+        MockSession.return_value = mock_session
+
+        # Levantar NoResultFound
+        mock_session.query.return_value.filter_by.return_value.one.side_effect = NoResultFound()
+
+        pid = str(uuid.uuid4())
+
+        with self.assertRaises(ValueError) as context:
+            repo.get_player_figure_cards(player_id=pid)
+
+        self.assertEqual(str(context.exception), "Game_model does not exist")
+
+        mock_session.close.assert_called_once()
 
     @patch('entities.db.gamesRepo.Session')
     def test_add_player_to_game_db_error(self, MockSession):
