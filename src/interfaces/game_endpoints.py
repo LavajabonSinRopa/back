@@ -4,13 +4,13 @@ from fastapi import APIRouter, HTTPException, Response
 from entities.game.game_utils import (add_game, get_games, get_game_by_id, 
                                       add_to_game, remove_player_from_game, pass_turn,
                                       start_game_by_id,get_game_status,is_players_turn,make_temp_movement,
-                                      remove_top_movement, apply_temp_movements, complete_figure)
+                                      remove_top_movement, apply_temp_movements, complete_figure, block_figure)
 
 from entities.player.player_utils import add_player
 from schemas.game_schemas import (CreateGameRequest, CreateGameResponse, 
                                   SkipTurnRequest, JoinGameRequest, JoinGameResponse,
                                   LeaveGameRequest, MakeMoveRequest, UnmakeMoveRequest,
-                                  applyTempMovementsRequest, CompleteFigureRequest)
+                                  applyTempMovementsRequest, CompleteFigureRequest, BlockFigureRequest)
 from interfaces.SocketManagers import public_manager, game_socket_manager 
 from sqlalchemy.exc import NoResultFound
 
@@ -216,6 +216,17 @@ async def complete_own_figure(game_id: str,request: CompleteFigureRequest):
     try:
         complete_figure(game_id=game_id, player_id=request.player_id, card_id=request.card_id, i = request.y, j = request.x)
         await game_socket_manager.broadcast_game(game_id,{"type":"FigureMade","payload": get_game_status(game_id)})
+    
+    except:
+        raise HTTPException(status_code=403, detail="Invalid Figure")
+    
+    return Response(status_code=200)
+
+@router.post("/{game_id}/blockFigure")
+async def complete_own_figure(game_id: str,request: BlockFigureRequest):
+    try:
+        block_figure(game_id=game_id, player_id=request.player_id, card_id=request.card_id, i = request.y, j = request.x)
+        await game_socket_manager.broadcast_game(game_id,{"type":"FigureBlocked","payload": get_game_status(game_id)})
     
     except:
         raise HTTPException(status_code=403, detail="Invalid Figure")

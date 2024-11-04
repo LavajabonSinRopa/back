@@ -55,3 +55,9 @@ class CompleteFigureRequest(BaseModel):
     card_id : str
     x : int
     y : int
+
+class BlockFigureRequest(BaseModel):
+    player_id : str
+    card_id : str
+    x : int
+    y : int
