@@ -116,7 +116,7 @@ def test_create_game_success(mock_add_player, mock_add_game, mock_game_socket_ma
     assert response.status_code == 200
     assert response.json() == {"game_id": '42', "player_id": '1'}
     mock_add_player.assert_called_once_with(player_name="Test Player")
-    mock_add_game.assert_called_once_with(game_name="Test Game", creator_id='1', password = None)
+    mock_add_game.assert_called_once_with(game_name="Test Game", creator_id='1', password = "")
     mock_game_socket_manager.create_game_map.assert_called_once_with('42')
     mock_game_socket_manager.join_player_to_game_map.assert_called_once_with('42', '1')
 
@@ -181,7 +181,7 @@ def test_join_game_success(mock_add_player, mock_game_socket_manager, mock_get_g
     assert response.json()['player_id'] == '1'
     mock_get_game_by_id.assert_called_once_with("Test_Game")
     mock_add_player.assert_called_once_with(player_name='Test_Player')
-    mock_add_to_game.assert_called_once_with(player_id='1', game_id='Test_Game')
+    mock_add_to_game.assert_called_once_with(player_id='1', game_id='Test_Game', password='')
     mock_game_socket_manager.broadcast_game.assert_called_once_with('Test_Game', {'type': 'PlayerJoined', 'payload': {'player_id': '1', 'player_name': 'Test_Player'}})
 
 def test_join_game_failure(mock_add_player, mock_game_socket_manager, mock_get_games, mock_get_game_by_id, mock_add_to_game):
@@ -226,6 +226,42 @@ def test_join_not_waiting(mock_add_player, mock_game_socket_manager, mock_get_ga
     mock_add_player.assert_not_called
     mock_add_to_game.assert_not_called
     mock_game_socket_manager.broadcast_game.assert_not_called
+
+def test_join_game_success_private(mock_add_player, mock_game_socket_manager, mock_get_games, mock_get_game_by_id, mock_add_to_game):
+    
+    mock_add_player.return_value = '1'  # Mock the player ID
+    mock_get_games.return_value = []  # Return an empty list for created games
+    mock_get_game_by_id.return_value = {'players': ['0'], 'state': 'waiting'}
+    mock_game_socket_manager.broadcast_game = AsyncMock()
+
+    request_data = {'player_name': 'Test_Player', 'password': '1234'}
+    response = client.post("/games/Test_Game/join", json=request_data)
+
+    assert response.status_code == 200
+    assert response.json()['player_id'] == '1'
+    mock_get_game_by_id.assert_called_once_with("Test_Game")
+    mock_add_player.assert_called_once_with(player_name='Test_Player')
+    mock_add_to_game.assert_called_once_with(player_id='1', game_id='Test_Game', password='1234')
+    mock_game_socket_manager.broadcast_game.assert_called_once_with('Test_Game', {'type': 'PlayerJoined', 'payload': {'player_id': '1', 'player_name': 'Test_Player'}})
+
+def test_join_game_fail_private_bad_pasword(mock_add_player, mock_game_socket_manager, mock_get_games, mock_get_game_by_id, mock_add_to_game):
+    
+    mock_add_player.return_value = '1'  # Mock the player ID
+    mock_get_games.return_value = []  # Return an empty list for created games
+    mock_get_game_by_id.return_value = {'players': ['0'], 'state': 'waiting'}
+    mock_game_socket_manager.broadcast_game = AsyncMock()
+    mock_add_to_game.side_effect = ValueError("Incorrect password")
+
+    request_data = {'player_name': 'Test_Player', 'password': 'Bad password'}
+    response = client.post("/games/Test_Game/join", json=request_data)
+
+    assert response.status_code == 403
+    mock_add_player.assert_not_called
+    mock_add_to_game.assert_not_called
+    mock_game_socket_manager.broadcast_game.assert_not_called
+
+
+
 
 
 def test_leave_game_success(mock_get_game_status, mock_get_game_by_id, mock_remove_player_from_game, mock_game_socket_manager):

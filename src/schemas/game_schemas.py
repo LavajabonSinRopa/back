@@ -6,7 +6,7 @@ from pydantic import BaseModel
 class CreateGameRequest(BaseModel):
     game_name: str
     player_name: str
-    password: str = None
+    password: str = ""
     
 
 # Formato de respuesta de POST a /games
@@ -17,10 +17,12 @@ class CreateGameResponse(BaseModel):
 # POST a /games/<game_id>/join
 class JoinGameRequest(BaseModel):
     player_name: str
+    password: str = ""
 
 # Respuesta de POST a games/<game_id>/join
 class JoinGameResponse(BaseModel):
     player_id: str
+    password: str = ""
 
 class GameInResponse(BaseModel):
     game_id: str
