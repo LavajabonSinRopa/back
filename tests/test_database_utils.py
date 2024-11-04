@@ -228,6 +228,30 @@ class test_games_Repo(unittest.TestCase):
         # Ver que se llama close()
         mock_session.close.assert_called_once()
 
+    def test_add_player_to_game_password(self):
+        pid = str(uuid.uuid4())
+        gid = str(uuid.uuid4())
+        repo.create_player(name="MESSI",unique_id=pid)
+        repo.create_game(unique_id=gid,name = "FUNALDELMUNDIAL",state="waiting",creator_id=pid, password = "diegomaradona")
+        repo.add_player_to_game(player_id=pid, game_id=gid, password = "diegomaradona")
+        game = repo.get_game(game_id=gid)
+        assert pid in game['players']
+    
+    def test_add_player_to_game_bad_password(self):
+        pid = str(uuid.uuid4())
+        gid = str(uuid.uuid4())
+        repo.create_player(name="MESSI",unique_id=pid)
+        repo.create_game(unique_id=gid,name = "FUNALDELMUNDIAL",state="waiting",creator_id=pid, password = "diegomaradona")
+          
+        with self.assertRaises(ValueError) as context:
+            repo.add_player_to_game(player_id=pid, game_id=gid, password="pele")
+        
+        self.assertEqual(str(context.exception), "Incorrect password")
+        game = repo.get_game(game_id=gid)
+        assert pid not in game['players']
+
+    
+    
     
     def test_create_card(self):
         pid,gid = str(uuid.uuid4()),str(uuid.uuid4())
