@@ -238,7 +238,8 @@ async def complete_own_figure(game_id: str,request: BlockFigureRequest):
         block_figure(game_id=game_id, player_id=request.player_id, card_id=request.card_id, i = request.y, j = request.x)
         await game_socket_manager.broadcast_game(game_id,{"type":"FigureBlocked","payload": get_game_status(game_id)})
     
-    except:
+    except Exception as e:
+        print(e)
         raise HTTPException(status_code=403, detail="Invalid Figure")
     
     return Response(status_code=200)

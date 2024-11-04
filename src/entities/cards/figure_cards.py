@@ -233,12 +233,16 @@ def figure_matches_type(figure_type, figure):
             return False
         possible_match = normalize_card(figure_card_types_hard[figure_type])
     
+    print("figure = ", figure)
+    print("possible match = ", possible_match)
+
     if figure == possible_match:
         return True
     for rotation in range(3):
         possible_match = normalize_card(rotate_card(possible_match))
         if figure == possible_match:
             return True
+        print("possible match = ", possible_match)
 
     return False
 

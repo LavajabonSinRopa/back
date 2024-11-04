@@ -370,7 +370,6 @@ def complete_figure(game_id, player_id, card_id, i, j):
 
         #TODO: update color prohibido
 
-        
         # Check if player ran out of cards after discarding
         player_cards = repo.get_player_figure_cards(player_id=player_id)['figure_cards']
         remaining_cards = len([fcard for fcard in player_cards if fcard["state"] != "discarded"])
@@ -394,13 +393,12 @@ def block_figure(game_id, player_id, card_id, i, j):
             raise Exception("Not in game")
         if not is_players_turn(game_id=game_id, player_id=player_id):
             raise Exception("Not your turn")
-
         card_type = -1
         cards = []
-        for player in repo.get_game_status(game_id=game_id)['players']:
-            if(player_id==player['unique_id']):
+        for player in repo.get_game(game_id=game_id)['players']:
+            if(player_id==player):
                 continue
-            player_cards = repo.get_player(player_id=player['unique_id'])['figure_cards']
+            player_cards = repo.get_player(player_id=player)['figure_cards']
             for card in player_cards:
                 cards.append(card)
         
