@@ -16,8 +16,8 @@ class FigureResult(Enum):
     PLAYER_WON = 2
 
 
-def add_game(game_name, creator_id):
-    new_game_id = repo.create_game(unique_id = str(uuid.uuid4()), name = game_name, state = "waiting", creator_id = creator_id)
+def add_game(game_name, creator_id, password = ""):
+    new_game_id = repo.create_game(unique_id = str(uuid.uuid4()), name = game_name, state = "waiting", creator_id = creator_id, password = password)
     #Creator_id is added as player
     repo.add_player_to_game(player_id=creator_id, game_id=new_game_id)
     return new_game_id
@@ -104,7 +104,7 @@ def get_games_with_player_names():
             for game in games
         ]
 
-def add_to_game(player_id,game_id):
+def add_to_game(player_id,game_id, password = ""):
     try:
         game = repo.get_game(game_id)
 
@@ -112,7 +112,7 @@ def add_to_game(player_id,game_id):
         if len(game["players"]) >= 4 or game['state'] != 'waiting':
             return -1
         
-        repo.add_player_to_game(player_id=player_id,game_id=game_id)
+        repo.add_player_to_game(player_id=player_id,game_id=game_id, password = password)
     except Exception as e:
         raise e
 

@@ -28,8 +28,9 @@ class Game(Base):
     __tablename__ = 'Games'
     unique_id = Column(String, primary_key=True)
     name = Column(String, nullable=False)
-    # "waiting", "started", "finished"
-    state = Column(String, nullable=False)
+    type = Column(String, nullable=False) # "public", "private"
+    password = Column(String)
+    state = Column(String, nullable=False) # "waiting", "started", "finished"
     # amount of turns that have passed. player[turn%len(players)] is to play
     turn = Column(Integer)
     creator = Column(String, ForeignKey('Players.unique_id'))

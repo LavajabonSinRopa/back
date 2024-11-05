@@ -10,10 +10,16 @@ Session = sessionmaker(bind=engine)
 
 class gameRepository:
     @staticmethod
-    def create_game(unique_id: str,name: str, state: str, creator_id: str) -> Game:
+    def create_game(unique_id: str,name: str, state: str, creator_id: str, password:str = "") -> Game:
+        
+        if password == None or password == "":
+            game_type = "public"
+            password = ""
+        else:
+            game_type = "private"
         session = Session()
         try:
-            new_game = Game(unique_id = unique_id, name=name, state=state, creator=creator_id, turn=0)
+            new_game = Game(unique_id = unique_id, name=name, state=state, creator=creator_id, turn=0,type=game_type, password=password)
             session.add(new_game)
             session.commit()
             return new_game.unique_id
@@ -45,6 +51,7 @@ class gameRepository:
             return {
                 "unique_id": game.unique_id,
                 "name": game.name,  
+                "type": game.type,
                 "state": game.state,
                 "turn": game.turn,
                 "creator": game.creator,
@@ -95,6 +102,7 @@ class gameRepository:
                 {
                     "unique_id": game.unique_id,
                     "name": game.name,
+                    "type": game.type,
                     "state": game.state,
                     "turn": game.turn,
                     "creator": game.creator,
@@ -126,12 +134,15 @@ class gameRepository:
             session.close()
     
     @staticmethod
-    def add_player_to_game(player_id: str, game_id: str):
+    def add_player_to_game(player_id: str, game_id: str, password:str = ""):
         session = Session()
         try:
             # Retrieve the player and game
             player = session.query(Player).filter_by(unique_id=player_id).one()
             game = session.query(Game).filter_by(unique_id=game_id).one()
+            
+            if game.type == "private" and game.password != password:
+                raise ValueError("Incorrect password")
             
             # Add the player to the game
             if player not in game.players:

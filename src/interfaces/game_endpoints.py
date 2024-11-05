@@ -25,7 +25,7 @@ async def create_game(request: CreateGameRequest):
 
     # Crear player (creador de la partida) y partida
     creator_id = add_player(player_name=request.player_name)
-    game_id = add_game(game_name=request.game_name, creator_id=creator_id)
+    game_id = add_game(game_name=request.game_name, creator_id=creator_id, password=request.password)
     
     game_socket_manager.create_game_map(game_id)
     game_socket_manager.join_player_to_game_map(game_id,creator_id)
@@ -51,7 +51,10 @@ async def join_game(game_id: str, request: JoinGameRequest):
 
     # Crear player, agregarlo al juego
     player_id = add_player(player_name=request.player_name)
-    add_to_game(player_id=player_id, game_id=game_id)
+    try:
+        add_to_game(player_id=player_id, game_id=game_id, password=request.password)
+    except:
+        raise HTTPException(status_code=403, detail="Invalid password")
     game_socket_manager.join_player_to_game_map(game_id,player_id)
 
     # Avisar a los sockets de la partida sobre el jugador que se une.
