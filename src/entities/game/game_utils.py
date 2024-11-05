@@ -123,6 +123,9 @@ def remove_player_from_game(player_id, game_id):
     except Exception as e:
         raise e
     
+def get_player_name(player_id):
+    return repo.get_player(player_id)["name"]
+    
 def get_players_names(game_id):
     return get_game_by_id(game_id=game_id)['player_names']
 
