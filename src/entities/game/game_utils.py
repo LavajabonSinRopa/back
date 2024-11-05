@@ -19,7 +19,7 @@ class FigureResult(Enum):
 def add_game(game_name, creator_id, password = ""):
     new_game_id = repo.create_game(unique_id = str(uuid.uuid4()), name = game_name, state = "waiting", creator_id = creator_id, password = password)
     #Creator_id is added as player
-    repo.add_player_to_game(player_id=creator_id, game_id=new_game_id)
+    repo.add_player_to_game(player_id=creator_id, game_id=new_game_id,password=password)
     return new_game_id
     
 def get_games():
