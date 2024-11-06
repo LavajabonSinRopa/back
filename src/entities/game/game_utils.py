@@ -95,6 +95,7 @@ def get_games_with_player_names():
             {
             "unique_id": game['unique_id'],
             "name": game['name'],
+            "type": game['type'],
             "state": game['state'],
             "turn": game['turn'],
             "creator": game['creator'],
