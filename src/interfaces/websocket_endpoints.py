@@ -33,7 +33,9 @@ async def connect_game(websocket : WebSocket, game_id, player_id):
                     chat_message = await websocket.receive_text()
                     await game_socket_manager.broadcast_game(game_id, {"type":"ChatMessage","payload":
                                                                        {   "time":datetime.datetime.now().strftime("%H:%M:%S"),
-                                                                           "player_name":get_player_name(player_id),"message":chat_message}})
+                                                                           "player_name":get_player_name(player_id),
+                                                                           "player_id":player_id,
+                                                                           "message":chat_message}})
             except WebSocketDisconnect:
                 await game_socket_manager.user_disconnect(game_id, player_id)
         else:
