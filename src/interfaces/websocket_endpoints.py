@@ -31,7 +31,8 @@ async def connect_game(websocket : WebSocket, game_id, player_id):
             try:
                 while True:
                     chat_message = await websocket.receive_text()
-                    await game_socket_manager.broadcast_game(game_id, {"type":"ChatMessage","payload":
+                    if chat_message != None and chat_message != "":
+                        await game_socket_manager.broadcast_game(game_id, {"type":"ChatMessage","payload":
                                                                        {   "time":datetime.datetime.now().strftime("%H:%M:%S"),
                                                                            "player_name":get_player_name(player_id),
                                                                            "player_id":player_id,
@@ -40,7 +41,11 @@ async def connect_game(websocket : WebSocket, game_id, player_id):
                 await game_socket_manager.user_disconnect(game_id, player_id)
         else:
             await websocket.accept()
-            await websocket.send_json({"type":"ERROR","payload":"Invalid game_id or player_id"})
+            await websocket.send_json({"type":"ERROR","payload":"Invalid player_id"})
             await websocket.close()
+    else:
+        await websocket.accept()
+        await websocket.send_json({"type":"ERROR","payload":"Invalid game_id"})
+        await websocket.close()
             
         
