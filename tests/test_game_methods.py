@@ -6,7 +6,7 @@ import os
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 
-from entities.game.game_utils import add_game,get_games, pass_turn, add_to_game, start_game_by_id, remove_player_from_game, get_players_names, make_temp_movement, highlight_figures, remove_top_movement, apply_temp_movements, complete_figure, block_figure
+from entities.game.game_utils import add_game,get_games, pass_turn, add_to_game, start_game_by_id, remove_player_from_game, get_players_names, get_player_name , make_temp_movement, highlight_figures, remove_top_movement, apply_temp_movements, complete_figure, block_figure
 
 games = [{'unique_id': '1', 'creator': 'ME', 'state': 'waiting', 'players': ['ME', 'p2'], 'player_names': ['MYNAME', 'p2NAME']}, 
          {'unique_id': '2', 'creator': 'also ME', 'state': 'started', 'players': ['also ME', 'p2'], 'turn': 0},
@@ -90,6 +90,13 @@ def test_get_players_names(mock_repo):
     mock_repo.get_game.return_value = games[0]
     assert get_players_names(game_id = 'A') == games[0]['player_names']
     mock_repo.get_game.assert_called_once
+
+def test_get_player_name_success(mock_repo):
+    mock_repo.get_player.return_value = {"name": "Messi", "unique_id": "123"}
+    result = get_player_name("123")
+    assert result == "Messi"
+    mock_repo.get_player.assert_called_once_with("123")
+
 
 def test_pass_turn_success(mock_repo, mock_take_move_card):
     mock_repo.get_game.return_value = games[1]
