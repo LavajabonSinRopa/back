@@ -113,7 +113,7 @@ def add_to_game(player_id,game_id, password = ""):
         game = repo.get_game(game_id)
 
         # Verificar que no se llegó a la cantidad máxima de players
-        if len(game["players"]) >= 4 or game['state'] != 'waiting' or game['password'] != password:
+        if len(game["players"]) >= 4 or game['state'] != 'waiting':
             return -1
         
         repo.add_player_to_game(player_id=player_id,game_id=game_id, password = password)

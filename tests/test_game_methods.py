@@ -92,11 +92,6 @@ def test_add_to_game_password(mock_repo):
     add_to_game(player_id = '9', game_id = '1')
     mock_repo.add_player_to_game.assert_called_once()
 
-def test_add_to_game_password_fail(mock_repo):
-    mock_repo.get_game.return_value = games[0]
-    assert -1 == add_to_game(player_id = '9', game_id = '1', password = 'wrong')
-    mock_repo.add_player_to_game.assert_not_called()
-
 def test_add_to_game_started(mock_repo):
     mock_repo.get_game.return_value = games[1]
     assert -1 == add_to_game(player_id = '9', game_id = '1')
