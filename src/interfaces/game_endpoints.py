@@ -4,7 +4,8 @@ from fastapi import APIRouter, HTTPException, Response
 from entities.game.game_utils import (add_game, get_games, get_game_by_id, 
                                       add_to_game, remove_player_from_game, pass_turn,
                                       start_game_by_id,get_game_status,is_players_turn,make_temp_movement,
-                                      remove_top_movement, apply_temp_movements, complete_figure, FigureResult, block_figure)
+                                      remove_top_movement, apply_temp_movements, complete_figure, FigureResult, block_figure,
+                                      finish_game)
 
 from entities.player.player_utils import add_player
 from schemas.game_schemas import (CreateGameRequest, CreateGameResponse, 
@@ -97,6 +98,7 @@ async def leave_game(game_id: str, request: LeaveGameRequest):
     game["player_names"].remove(player_name)
     game['players'].remove(request.player_id)
     if len(game['players']) <= 1:
+        finish_game(game_id)
         await game_socket_manager.broadcast_game(game_id,{"type":"GameWon","payload": {'player_id' : game['players'][0], 'player_name': game['player_names'][0]}})
         
     #Actualizar la cantidad de jugadores a los que buscan partida.
@@ -105,6 +107,31 @@ async def leave_game(game_id: str, request: LeaveGameRequest):
 
     # Devolver 200 OK sin data extra
     return Response(status_code=200)
+
+@router.post("/{game_id}/cancel")
+async def cancel_game(game_id: str, request: LeaveGameRequest):
+    """Endpoint to cancel a game."""
+    try:
+        game = get_game_by_id(game_id)
+    except:
+        raise HTTPException(status_code=404, detail="Invalid game ID")
+    
+    # Verificar que el juego está en estado "waiting"
+    if(game['state']!='waiting'):
+        raise HTTPException(status_code=403, detail="No se puede eliminar un juego que ya comenzó o terminó")
+
+    # Verificar que el jugador sea el creador del juego
+    if game["creator"] != request.player_id:
+        raise HTTPException(status_code=403, detail="Sólo puede cancelar la partida el creador del juego")
+    
+    # Avisar a los jugadores que se cancela la partida
+    await game_socket_manager.broadcast_game(game_id,{"type":"GameClosed","payload": "Game Closed, disconnected"})
+
+    # Cambiar estado del juego a "finished"
+    finish_game(game_id)
+    
+    return Response(status_code=200)
+
 
 @router.post("/{game_id}/skip")
 async def skip_turn(game_id: str, request: SkipTurnRequest):
@@ -223,6 +250,9 @@ async def complete_own_figure(game_id: str, request: CompleteFigureRequest):
             game = get_game_by_id(game_id)
             winner_index = game["players"].index(request.player_id)
             winner_name = game["player_names"][winner_index]
+
+            finish_game(game_id)
+
             await game_socket_manager.broadcast_game(game_id,{"type":"GameWon","payload": {'player_id' : request.player_id, 'player_name': winner_name}})
         else:  # FigureResult.COMPLETED
             await game_socket_manager.broadcast_game(game_id,{"type":"FigureMade","payload": get_game_status(game_id)})
