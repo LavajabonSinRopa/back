@@ -119,8 +119,8 @@ async def cancel_game(game_id: str, request: LeaveGameRequest):
         raise HTTPException(status_code=403, detail="No se puede eliminar un juego que ya comenzó o terminó")
 
     # Verificar que el jugador sea el creador del juego
-    if game["creator"] == request.player_id and game["state"] == "waiting":
-        raise HTTPException(status_code=403, detail="El creador del juego no puede abandonar la partida")
+    if game["creator"] != request.player_id:
+        raise HTTPException(status_code=403, detail="Sólo puede cancelar la partida el creador del juego")
     
     # Avisar a los jugadores que se cancela la partida
     await public_manager.broadcast({"type":"GameClosed","payload": "Game Closed, disconnected"})
