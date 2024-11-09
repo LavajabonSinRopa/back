@@ -123,7 +123,9 @@ async def cancel_game(game_id: str, request: LeaveGameRequest):
         raise HTTPException(status_code=403, detail="Sólo puede cancelar la partida el creador del juego")
     
     # Avisar a los jugadores que se cancela la partida
-    await public_manager.broadcast({"type":"GameClosed","payload": "Game Closed, disconnected"})
+    await game_socket_manager.broadcast_game(game_id,{"type":"GameClosed","payload": "Game Closed, disconnected"})
+    
+    return Response(status_code=200)
 
 
 @router.post("/{game_id}/skip")
