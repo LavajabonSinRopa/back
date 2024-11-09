@@ -3,6 +3,7 @@ from ..db.gamesRepo import repo
 from sqlalchemy.exc import NoResultFound
 import uuid
 import random
+import datetime
 from ..player.player_utils import drawn_figure_card, take_move_card
 from ..cards.movent_cards import can_move_to
 from ..cards.figure_cards import figure_exists, figure_matches_type
@@ -75,6 +76,7 @@ def get_game_status(game_id):
         "state": game['state'],
         "board": board,
         "turn": game['turn'],
+        "turn_timer": calculate_turn_time(game_id),
         "creator": game['creator'],
         "players": get_players_status(game_id)
     }
@@ -134,6 +136,13 @@ def is_players_turn(game_id, player_id):
     except Exception as e:
         raise e
     return game['players'][game['turn']%len(game['players'])]==player_id
+
+def calculate_turn_time(game_id):
+    start_turn_time = repo.get_turn_time(game_id)
+    now = datetime.datetime.now()
+    difference = now - start_turn_time
+    seconds_difference = difference.total_seconds()
+    return int(120 - seconds_difference)
 
 def pass_turn(game_id, player_id):
     """
@@ -227,6 +236,7 @@ def start_game_by_id(game_id):
     game = get_game_by_id(game_id)
     if game["state"] == "waiting":
         repo.edit_game_state(game_id,"started")
+        repo.start_turn_timer(game_id)
         repo.create_board(game_id)
         create_move_deck_for_game(game_id)
         create_figure_cards(game_id)

@@ -56,7 +56,7 @@ def mock_take_figure_card():
 def test_add_game_success(mock_repo):
     mock_repo.create_game.return_value = 'lukaModric'
     assert add_game(game_name = "Test_Game", creator_id = 'darthVader') == 'lukaModric'
-    mock_repo.add_player_to_game.assert_called_once_with(player_id = 'darthVader', game_id = 'lukaModric')
+    mock_repo.add_player_to_game.assert_called_once_with(player_id = 'darthVader', game_id = 'lukaModric', password = '')
     mock_repo.create_game.assert_called_once()
 
 def test_get_games(mock_repo):

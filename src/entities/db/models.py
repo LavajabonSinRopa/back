@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, String, ForeignKey, Table, Integer
+from sqlalchemy import create_engine, Column, String, ForeignKey, Table, Integer, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from .settings import DATABASE_FILENAME
@@ -33,6 +33,7 @@ class Game(Base):
     state = Column(String, nullable=False) # "waiting", "started", "finished"
     # amount of turns that have passed. player[turn%len(players)] is to play
     turn = Column(Integer)
+    turn_start_time = Column(DateTime)
     creator = Column(String, ForeignKey('Players.unique_id'))
     players = relationship('Player', secondary=game_player_association, back_populates='games')
     board = Column(String)
