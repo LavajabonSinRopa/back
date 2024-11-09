@@ -97,6 +97,11 @@ def mock_block_figure():
     with patch('interfaces.game_endpoints.block_figure') as mock:
         yield mock
 
+@pytest.fixture
+def mock_finish_game():
+    with patch('interfaces.game_endpoints.finish_game') as mock:
+        yield mock
+
 def test_create_game_success(mock_add_player, mock_add_game, mock_game_socket_manager, mock_get_games):
     # Arrange
     mock_add_player.return_value = '1'  # Mock the player ID
@@ -264,7 +269,7 @@ def test_join_game_fail_private_bad_pasword(mock_add_player, mock_game_socket_ma
 
 
 
-def test_leave_game_success(mock_get_game_status, mock_get_game_by_id, mock_remove_player_from_game, mock_game_socket_manager):
+def test_leave_game_success(mock_get_game_status, mock_get_game_by_id, mock_remove_player_from_game, mock_game_socket_manager, mock_finish_game):
     
     mock_get_game_by_id.return_value = {'players': ['0','Test_Player'], 'state': 'waiting', 'creator': '0', 'player_names': ['mauri', 'rimau']}
     mock_game_socket_manager.broadcast_game = AsyncMock()
@@ -469,7 +474,7 @@ def test_apply_move_failure_no_turn(mock_get_game_status, mock_game_socket_manag
     mock_get_game_status.assert_not_called()
 
 
-def test_complete_figure_player_wins(mock_get_game_status, mock_game_socket_manager, mock_complete_figure, mock_get_game_by_id):
+def test_complete_figure_player_wins(mock_get_game_status, mock_game_socket_manager, mock_complete_figure, mock_get_game_by_id, mock_finish_game):
     mock_game_socket_manager.broadcast_game = AsyncMock()
     mock_get_game_status.return_value = []
     mock_complete_figure.return_value = FigureResult.PLAYER_WON  
@@ -529,6 +534,55 @@ def test_block_figure_failure(mock_get_game_status, mock_game_socket_manager, mo
     assert response.status_code == 403
     mock_block_figure.assert_called_once_with(game_id='Test_Game', player_id='Test_Player', card_id='test_card', i=4, j=1)
     mock_game_socket_manager.broadcast_game.assert_not_called()
+
+def test_cancel_game_success(mock_get_game_by_id, mock_game_socket_manager, mock_finish_game):
+    mock_get_game_by_id.return_value = {'players': ['0', 'Test_Player'], 'state': 'waiting', 'creator': 'Test_Player'}
+    mock_game_socket_manager.broadcast_game = AsyncMock()
+
+    request_data = {'player_id': 'Test_Player'}
+    response = client.post("/games/Test_Game/cancel", json=request_data)
+
+    assert response.status_code == 200
+    mock_get_game_by_id.assert_called_once_with("Test_Game")
+    mock_game_socket_manager.broadcast_game.assert_called_once_with('Test_Game', {"type": "GameClosed", "payload": "Game Closed, disconnected"})
+    mock_finish_game.assert_called_once_with("Test_Game")
+
+def test_cancel_game_not_creator(mock_get_game_by_id, mock_game_socket_manager, mock_finish_game):
+    mock_get_game_by_id.return_value = {'players': ['0', 'Test_Player'], 'state': 'waiting', 'creator': '0'}
+    mock_game_socket_manager.broadcast_game = AsyncMock()
+
+    request_data = {'player_id': 'Test_Player'}
+    response = client.post("/games/Test_Game/cancel", json=request_data)
+
+    assert response.status_code == 403
+    mock_get_game_by_id.assert_called_once_with("Test_Game")
+    mock_game_socket_manager.broadcast_game.assert_not_called()
+    mock_finish_game.assert_not_called()
+
+def test_cancel_game_not_waiting(mock_get_game_by_id, mock_game_socket_manager, mock_finish_game):
+    mock_get_game_by_id.return_value = {'players': ['0', 'Test_Player'], 'state': 'started', 'creator': 'Test_Player'}
+    mock_game_socket_manager.broadcast_game = AsyncMock()
+
+    request_data = {'player_id': 'Test_Player'}
+    response = client.post("/games/Test_Game/cancel", json=request_data)
+
+    assert response.status_code == 403
+    mock_get_game_by_id.assert_called_once_with("Test_Game")
+    mock_game_socket_manager.broadcast_game.assert_not_called()
+    mock_finish_game.assert_not_called()
+
+def test_cancel_game_invalid_id(mock_get_game_by_id, mock_game_socket_manager, mock_finish_game):
+    mock_get_game_by_id.side_effect = Exception("TEST")
+    mock_game_socket_manager.broadcast_game = AsyncMock()
+
+    request_data = {'player_id': 'Test_Player'}
+    response = client.post("/games/Test_Game/cancel", json=request_data)
+
+    assert response.status_code == 404
+    mock_get_game_by_id.assert_called_once_with("Test_Game")
+    mock_game_socket_manager.broadcast_game.assert_not_called()
+    mock_finish_game.assert_not_called()
+
 
 if __name__ == "__main__":
     pytest.main()
