@@ -106,6 +106,26 @@ async def leave_game(game_id: str, request: LeaveGameRequest):
     # Devolver 200 OK sin data extra
     return Response(status_code=200)
 
+@router.post("/{game_id}/cancel")
+async def cancel_game(game_id: str, request: LeaveGameRequest):
+    """Endpoint to cancel a game."""
+    try:
+        game = get_game_by_id(game_id)
+    except:
+        raise HTTPException(status_code=404, detail="Invalid game ID")
+    
+    # Verificar que el juego está en estado "waiting"
+    if(game['state']!='waiting'):
+        raise HTTPException(status_code=403, detail="No se puede eliminar un juego que ya comenzó o terminó")
+
+    # Verificar que el jugador sea el creador del juego
+    if game["creator"] == request.player_id and game["state"] == "waiting":
+        raise HTTPException(status_code=403, detail="El creador del juego no puede abandonar la partida")
+    
+    # Avisar a los jugadores que se cancela la partida
+    await public_manager.broadcast({"type":"GameClosed","payload": "Game Closed, disconnected"})
+
+
 @router.post("/{game_id}/skip")
 async def skip_turn(game_id: str, request: SkipTurnRequest):
     """Endpoint to join a game."""
