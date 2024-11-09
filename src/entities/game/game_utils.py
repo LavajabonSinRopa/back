@@ -28,6 +28,9 @@ def get_games():
     games_waiting = [game for game in games if game['state'] == 'waiting'] 
     return games_waiting
 
+def get_all_games():
+    return repo.get_games()
+
 def get_game_by_id(game_id):
     """
     Get a specific game by its unique ID.

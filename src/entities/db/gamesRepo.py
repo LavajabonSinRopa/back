@@ -255,7 +255,7 @@ class gameRepository:
         session = Session()
         try:
             game = session.query(Game).filter_by(unique_id=game_id).one()
-            return game.start_turn_time
+            return game.turn_start_time
         except Exception as e:
             session.rollback()
             raise e
@@ -267,7 +267,7 @@ class gameRepository:
         session = Session()
         try:
             game = session.query(Game).filter_by(unique_id=game_id).one()
-            game.start_turn_time = datetime.datetime.now()
+            game.turn_start_time = datetime.datetime.now()
             session.commit()
         except Exception as e:
             session.rollback()
