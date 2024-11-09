@@ -250,9 +250,6 @@ class test_games_Repo(unittest.TestCase):
         game = repo.get_game(game_id=gid)
         assert pid not in game['players']
 
-    
-    
-    
     def test_create_card(self):
         pid,gid = str(uuid.uuid4()),str(uuid.uuid4())
         repo.create_player(name="MESSI",unique_id=pid)

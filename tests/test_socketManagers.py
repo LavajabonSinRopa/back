@@ -78,7 +78,7 @@ async def test_public_broadcast():
     
 @pytest.fixture
 def game_socket_manager():
-    with patch('interfaces.SocketManagers.get_games', return_value=[
+    with patch('interfaces.SocketManagers.get_all_games', return_value=[
         {"unique_id": "game_id1", "players": ["player1", "player2"]},
         {"unique_id": "game_id2", "players": ["player3", "player4"]}
     ]):
