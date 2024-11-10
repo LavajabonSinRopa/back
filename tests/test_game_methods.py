@@ -7,7 +7,7 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 
 
-from entities.game.game_utils import add_game,get_games, get_all_games, pass_turn, add_to_game, start_game_by_id, remove_player_from_game, get_players_names, get_player_name , make_temp_movement, highlight_figures, remove_top_movement, apply_temp_movements, complete_figure, block_figure, finish_game
+from entities.game.game_utils import add_game,get_games, get_all_games, pass_turn, add_to_game, start_game_by_id, remove_player_from_game, get_players_names, get_player_name , make_temp_movement, highlight_figures, remove_top_movement, apply_temp_movements, complete_figure, block_figure, finish_game, FigureResult
 
 
 games = [{'unique_id': '1', 'creator': 'ME', 'state': 'waiting', 'password' : '', 'players': ['ME', 'p2'], 'player_names': ['MYNAME', 'p2NAME'], 'forbidden_color': None}, 
@@ -358,6 +358,30 @@ def test_block_figure_failure(mock_repo):
 def test_finish_game(mock_repo):
     finish_game('1')
     mock_repo.edit_game_state.assert_called_once_with(game_id='1', new_state='finished')
+
+def test_complete_figure_forbidden_color(mock_repo):
+    game_with_forbidden = games[4].copy()
+    game_with_forbidden['forbidden_color'] = 'red'
+    mock_repo.get_game.return_value = game_with_forbidden
+    mock_repo.get_player.return_value = games[3]['players'][0]
+    
+    result = complete_figure(game_id = games[3]['unique_id'], player_id = games[3]['players'][0]['unique_id'], card_id = games[3]['players'][0]['figure_cards'][0]['unique_id'], i = 0, j = 4)
+    
+    assert result == FigureResult.INVALID
+    mock_repo.apply_temp_movements.assert_not_called()
+    mock_repo.discard_card.assert_not_called()
+
+def test_block_figure_forbidden_color(mock_repo):
+    game_with_forbidden = games[4].copy()
+    game_with_forbidden['forbidden_color'] = 'red'
+    mock_repo.get_game.return_value = game_with_forbidden
+    mock_repo.get_player.return_value = games[3]['players'][0]
+    
+    result = block_figure(game_id = games[3]['unique_id'], player_id = games[3]['players'][0]['unique_id'], card_id = games[3]['players'][1]['figure_cards'][0]['unique_id'], i = 0, j = 4)
+    
+    assert result == FigureResult.INVALID
+    mock_repo.apply_temp_movements.assert_not_called()
+    mock_repo.block_card.assert_not_called()
 
 if __name__ == "__main__":
     unittest.main()
