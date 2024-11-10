@@ -585,6 +585,48 @@ class test_games_Repo(unittest.TestCase):
         assert repo.get_card(card_id=card_id)['state'] == 'blocked'
         repo.unblock_card(card_id=card_id)
         assert repo.get_card(card_id=card_id)['state'] == 'drawn'
+    
+    def test_get_turn_time(self):
+        pid = str(uuid.uuid4())
+        gid = str(uuid.uuid4())
+        repo.create_player(name="MESSI",unique_id=pid)
+        repo.create_game(unique_id=gid,name="FUNALDELMUNDIAL",state="started",creator_id=pid)
+        repo.add_player_to_game(player_id=pid,game_id=gid)
+        repo.start_turn_timer(game_id=gid)
+        turn_time = repo.get_turn_time(game_id=gid)
+        self.assertIsNotNone(turn_time)
+
+    @patch('entities.db.gamesRepo.Session')
+    def test_get_turn_time_db_error(self, MockSession):
+        mock_session = MagicMock()
+        MockSession.return_value = mock_session
+        mock_session.query.return_value.filter_by.return_value.one.side_effect = SQLAlchemyError("Database error")
+        gid = str(uuid.uuid4())
+        with self.assertRaises(SQLAlchemyError):
+            repo.get_turn_time(game_id=gid)
+        mock_session.rollback.assert_called_once()
+        mock_session.close.assert_called_once()
+
+    def test_start_turn_timer(self):
+        pid = str(uuid.uuid4())
+        gid = str(uuid.uuid4())
+        repo.create_player(name="MESSI",unique_id=pid)
+        repo.create_game(unique_id=gid,name="FUNALDELMUNDIAL",state="started",creator_id=pid)
+        repo.add_player_to_game(player_id=pid,game_id=gid)
+        repo.start_turn_timer(game_id=gid)
+        turn_time = repo.get_turn_time(game_id=gid)
+        self.assertIsNotNone(turn_time)
+
+    @patch('entities.db.gamesRepo.Session')
+    def test_start_turn_timer_db_error(self, MockSession):
+        mock_session = MagicMock()
+        MockSession.return_value = mock_session
+        mock_session.query.return_value.filter_by.return_value.one.side_effect = SQLAlchemyError("Database error")
+        gid = str(uuid.uuid4())
+        with self.assertRaises(SQLAlchemyError):
+            repo.start_turn_timer(game_id=gid)
+        mock_session.rollback.assert_called_once()
+        mock_session.close.assert_called_once()
 
 if __name__ == "__main__":
     unittest.main()
