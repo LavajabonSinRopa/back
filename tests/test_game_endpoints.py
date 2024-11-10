@@ -482,7 +482,7 @@ def test_complete_figure_player_wins(mock_get_game_status, mock_game_socket_mana
 
     request_data = {'player_id': 'Test_Player', 'x' : 1, 'y' : 4, 'card_id' : 'test_card'}
     response = client.post("/games/Test_Game/completeFigure", json=request_data)
-
+    print(response)
     assert response.status_code == 200
     mock_complete_figure.assert_called_once_with(game_id='Test_Game', player_id='Test_Player', card_id='test_card', i=4, j=1)
     mock_get_game_by_id.assert_called_once_with('Test_Game')

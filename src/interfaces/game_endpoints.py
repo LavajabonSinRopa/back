@@ -253,7 +253,7 @@ async def complete_own_figure(game_id: str, request: CompleteFigureRequest):
 
             finish_game(game_id)
 
-            await game_socket_manager.broadcast_game(game_idt,{"type":"GameWon","payload": {'player_id' : request.player_id, 'player_name': winner_name}})
+            await game_socket_manager.broadcast_game(game_id,{"type":"GameWon","payload": {'player_id' : request.player_id, 'player_name': winner_name}})
         elif result == FigureResult.COMPLETED:  
             await game_socket_manager.broadcast_game(game_id,{"type":"FigureMade","payload": get_game_status(game_id)})
         else:  # FigureResult.INVALID
