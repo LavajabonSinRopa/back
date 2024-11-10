@@ -1,6 +1,6 @@
 from fastapi import WebSocket, WebSocketDisconnect
 from starlette.websockets import WebSocketState
-from entities.game.game_utils import get_games
+from entities.game.game_utils import get_all_games
 
 
 ## Clase que se encarga de las conexiones publicas
@@ -38,7 +38,7 @@ class PublicManager:
 class GameSocketManager:
     def __init__(self):
         self.sockets_map = {"game_idTEST":{"player_idTEST" : None}}
-        for game in get_games():
+        for game in get_all_games():
             game_id = game["unique_id"]
             if game_id not in self.sockets_map:
                 self.sockets_map[game_id] = {}

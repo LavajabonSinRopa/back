@@ -6,9 +6,11 @@ import os
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 
-from entities.game.game_utils import add_game,get_games, pass_turn, add_to_game, start_game_by_id, remove_player_from_game, get_players_names, get_player_name , make_temp_movement, highlight_figures, remove_top_movement, apply_temp_movements, complete_figure, block_figure, finish_game
 
-games = [{'unique_id': '1', 'creator': 'ME', 'state': 'waiting', 'players': ['ME', 'p2'], 'player_names': ['MYNAME', 'p2NAME']}, 
+from entities.game.game_utils import add_game,get_games, get_all_games, pass_turn, add_to_game, start_game_by_id, remove_player_from_game, get_players_names, get_player_name , make_temp_movement, highlight_figures, remove_top_movement, apply_temp_movements, complete_figure, block_figure, finish_game
+
+
+games = [{'unique_id': '1', 'creator': 'ME', 'state': 'waiting', 'password' : '', 'players': ['ME', 'p2'], 'player_names': ['MYNAME', 'p2NAME']}, 
          {'unique_id': '2', 'creator': 'also ME', 'state': 'started', 'players': ['also ME', 'p2'], 'turn': 0},
          {'unique_id': '3', 'creator': 'also also ME', 'state': 'waiting', 'players': ['also also ME', 'p2', 'p3', 'p3']},
          {'unique_id': 'adb7026d-cf96-4bac-937b-a8106e56f160', 'name': 'GAME3', 'state': 'started', 
@@ -34,8 +36,7 @@ games = [{'unique_id': '1', 'creator': 'ME', 'state': 'waiting', 'players': ['ME
                     ['yellow', 'blue', 'red', 'yellow', 'green', 'figure'], 
                     ['red', 'green', 'red', 'figure', 'figure', 'figure']],
           'turn': 1, 'creator': 'fbe2bf36-dc11-470e-a61e-4774b4d4aa23', 
-          'players': ['lali','67ab34c4-052f-4683-be84-5886f26b864e']}
-]
+          'players': ['lali','67ab34c4-052f-4683-be84-5886f26b864e']}]
 
 # FUNCTIONS THAT WILL BE PATCHED
 @pytest.fixture
@@ -56,8 +57,15 @@ def mock_take_figure_card():
 def test_add_game_success(mock_repo):
     mock_repo.create_game.return_value = 'lukaModric'
     assert add_game(game_name = "Test_Game", creator_id = 'darthVader') == 'lukaModric'
-    mock_repo.add_player_to_game.assert_called_once_with(player_id = 'darthVader', game_id = 'lukaModric', password='')
+    mock_repo.add_player_to_game.assert_called_once_with(player_id = 'darthVader', game_id = 'lukaModric', password = '')
+
+
+def test_add_game_success_password(mock_repo):
+    mock_repo.create_game.return_value = 'lukaModric'
+    assert add_game(game_name = "Test_Game", creator_id = 'darthVader',password="poroto") == 'lukaModric'
+    mock_repo.add_player_to_game.assert_called_once_with(player_id = 'darthVader', game_id = 'lukaModric', password = 'poroto')
     mock_repo.create_game.assert_called_once()
+
 
 def test_get_games(mock_repo):
     mock_repo.get_games.return_value = games
@@ -67,7 +75,21 @@ def test_get_games(mock_repo):
     assert games[2] in games_gotten
     mock_repo.get_games.assert_called_once()
 
+def test_get_all_games(mock_repo):
+    mock_repo.get_games.return_value = games
+    games_gotten = get_all_games()
+    assert games[0] in games_gotten
+    assert games[1] in games_gotten
+    assert games[2] in games_gotten
+    mock_repo.get_games.assert_called_once()
+
+
 def test_add_to_game(mock_repo):
+    mock_repo.get_game.return_value = games[0]
+    add_to_game(player_id = '9', game_id = '1')
+    mock_repo.add_player_to_game.assert_called_once()
+
+def test_add_to_game_password(mock_repo):
     mock_repo.get_game.return_value = games[0]
     add_to_game(player_id = '9', game_id = '1')
     mock_repo.add_player_to_game.assert_called_once()
@@ -120,6 +142,7 @@ def test_start_game_by_id(mock_repo, mock_take_move_card, mock_take_figure_card)
     mock_repo.get_game.return_value = games[0]
     start_game_by_id('Game 1')
     mock_repo.edit_game_state.assert_called_once_with('Game 1', 'started')
+    mock_repo.start_turn_timer.assert_called_once_with('Game 1')
     mock_take_move_card.assert_called()
     mock_take_figure_card.assert_called()
 
@@ -330,6 +353,7 @@ def test_block_figure_failure(mock_repo):
     except:
         mock_repo.apply_temp_movements.assert_not_called()
         mock_repo.block_card.assert_not_called()
+
 
 def test_finish_game(mock_repo):
     finish_game('1')

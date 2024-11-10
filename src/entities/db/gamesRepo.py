@@ -4,6 +4,7 @@ from .models import Game, Player, engine, Figure_card, Movement_card, Movement
 from typing import List
 import uuid
 import random
+import datetime
 
 # Create a session
 Session = sessionmaker(bind=engine)
@@ -250,11 +251,37 @@ class gameRepository:
             session.close()
 
     @staticmethod
+    def get_turn_time(game_id: str):
+        session = Session()
+        try:
+            game = session.query(Game).filter_by(unique_id=game_id).one()
+            return game.turn_start_time
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            session.close()
+
+    @staticmethod
+    def start_turn_timer(game_id: str):
+        session = Session()
+        try:
+            game = session.query(Game).filter_by(unique_id=game_id).one()
+            game.turn_start_time = datetime.datetime.now()
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            session.close()
+
+    @staticmethod
     def pass_turn(game_id: str):
         session = Session()
         try :
             game = session.query(Game).filter_by(unique_id=game_id).one()            
             game.turn += 1
+            game.turn_start_time = datetime.datetime.now()
             session.commit()
         except Exception as e:
             session.rollback()
