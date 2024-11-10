@@ -7,7 +7,7 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 
 
-from entities.game.game_utils import add_game,get_games, get_all_games, pass_turn, add_to_game, start_game_by_id, remove_player_from_game, get_players_names, get_player_name , make_temp_movement, highlight_figures, remove_top_movement, apply_temp_movements, complete_figure, block_figure
+from entities.game.game_utils import add_game,get_games, get_all_games, pass_turn, add_to_game, start_game_by_id, remove_player_from_game, get_players_names, get_player_name , make_temp_movement, highlight_figures, remove_top_movement, apply_temp_movements, complete_figure, block_figure, finish_game
 
 
 games = [{'unique_id': '1', 'creator': 'ME', 'state': 'waiting', 'password' : '', 'players': ['ME', 'p2'], 'player_names': ['MYNAME', 'p2NAME']}, 
