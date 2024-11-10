@@ -133,6 +133,9 @@ def get_player_name(player_id):
 def get_players_names(game_id):
     return get_game_by_id(game_id=game_id)['player_names']
 
+def finish_game(game_id):
+    repo.edit_game_state(game_id=game_id, new_state="finished")
+
 def is_players_turn(game_id, player_id):
     try:
         game = get_game_by_id(game_id=game_id)

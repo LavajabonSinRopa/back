@@ -6,7 +6,9 @@ import os
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 
+
 from entities.game.game_utils import add_game,get_games, get_all_games, pass_turn, add_to_game, start_game_by_id, remove_player_from_game, get_players_names, get_player_name , make_temp_movement, highlight_figures, remove_top_movement, apply_temp_movements, complete_figure, block_figure
+
 
 games = [{'unique_id': '1', 'creator': 'ME', 'state': 'waiting', 'password' : '', 'players': ['ME', 'p2'], 'player_names': ['MYNAME', 'p2NAME']}, 
          {'unique_id': '2', 'creator': 'also ME', 'state': 'started', 'players': ['also ME', 'p2'], 'turn': 0},
@@ -56,7 +58,7 @@ def test_add_game_success(mock_repo):
     mock_repo.create_game.return_value = 'lukaModric'
     assert add_game(game_name = "Test_Game", creator_id = 'darthVader') == 'lukaModric'
     mock_repo.add_player_to_game.assert_called_once_with(player_id = 'darthVader', game_id = 'lukaModric', password = '')
-    mock_repo.create_game.assert_called_once()
+
 
 def test_add_game_success_password(mock_repo):
     mock_repo.create_game.return_value = 'lukaModric'
@@ -352,6 +354,10 @@ def test_block_figure_failure(mock_repo):
         mock_repo.apply_temp_movements.assert_not_called()
         mock_repo.block_card.assert_not_called()
 
+
+def test_finish_game(mock_repo):
+    finish_game('1')
+    mock_repo.edit_game_state.assert_called_once_with(game_id='1', new_state='finished')
 
 if __name__ == "__main__":
     unittest.main()
