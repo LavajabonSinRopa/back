@@ -253,10 +253,12 @@ async def complete_own_figure(game_id: str, request: CompleteFigureRequest):
 
             finish_game(game_id)
 
-            await game_socket_manager.broadcast_game(game_id,{"type":"GameWon","payload": {'player_id' : request.player_id, 'player_name': winner_name}})
-        else:  # FigureResult.COMPLETED
+            await game_socket_manager.broadcast_game(game_idt,{"type":"GameWon","payload": {'player_id' : request.player_id, 'player_name': winner_name}})
+        elif result == FigureResult.COMPLETED:  
             await game_socket_manager.broadcast_game(game_id,{"type":"FigureMade","payload": get_game_status(game_id)})
-        
+        else:  # FigureResult.INVALID
+            raise HTTPException(status_code=403, detail="You can't use the forbidden color!")
+
         return Response(status_code=200)
         
     except Exception as e:
@@ -266,10 +268,14 @@ async def complete_own_figure(game_id: str, request: CompleteFigureRequest):
     return Response(status_code=200)
 
 @router.post("/{game_id}/blockFigure")
-async def complete_own_figure(game_id: str,request: BlockFigureRequest):
+async def block_opponent_figure(game_id: str,request: BlockFigureRequest):
     try:
-        block_figure(game_id=game_id, player_id=request.player_id, card_id=request.card_id, i = request.y, j = request.x)
-        await game_socket_manager.broadcast_game(game_id,{"type":"FigureBlocked","payload": get_game_status(game_id)})
+        result = block_figure(game_id=game_id, player_id=request.player_id, card_id=request.card_id, i = request.y, j = request.x)
+        
+        if result == FigureResult.INVALID:
+            raise HTTPException(status_code=403, detail="You can't use the forbidden color!")
+        else:
+            await game_socket_manager.broadcast_game(game_id,{"type":"FigureBlocked","payload": get_game_status(game_id)})
     
     except Exception as e:
         print(e)

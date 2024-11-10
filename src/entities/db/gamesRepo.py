@@ -58,7 +58,8 @@ class gameRepository:
                 "creator": game.creator,
                 "players": [player.unique_id for player in game.players],
                 "player_names": [player.name for player in game.players],
-                "board": gameRepository.get_board(game_id)
+                "board": gameRepository.get_board(game_id),
+                "forbidden_color": game.forbidden_color
             }
         except NoResultFound:
             raise ValueError("Game_model does not exist")
@@ -576,6 +577,24 @@ class gameRepository:
             # Retrieve the card
             card = session.query(Figure_card).filter_by(unique_id=card_id).one_or_none()
             card.state = 'drawn'
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            session.close()
+    
+    @staticmethod
+    def set_forbidden_color(game_id: str, color: str):
+        session = Session()
+        try:
+            game = session.query(Game).filter_by(unique_id=game_id).one()
+            
+            # Validar color
+            if color is not None and color not in ['red', 'green', 'blue', 'yellow']:
+                raise ValueError("Invalid color. Must be 'red', 'green', 'blue', 'yellow' or None")
+                
+            game.forbidden_color = color
             session.commit()
         except Exception as e:
             session.rollback()
