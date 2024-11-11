@@ -81,7 +81,8 @@ def get_game_status(game_id):
         "turn": game['turn'],
         "turn_timer": calculate_turn_time(game_id),
         "creator": game['creator'],
-        "players": get_players_status(game_id)
+        "players": get_players_status(game_id),
+        "forbidden_color": game["forbidden_color"]
     }
     return status
 
@@ -391,8 +392,6 @@ def complete_figure(game_id, player_id, card_id, i, j):
 
         repo.set_forbidden_color(game_id, color)
 
-        print(f"FORBIDDEN COLOR is {game["forbidden_color"]}, actual one is {color}")
-
         # Check if player ran out of cards after discarding
         player_cards = repo.get_player_figure_cards(player_id=player_id)['figure_cards']
         remaining_cards = len([fcard for fcard in player_cards if fcard["state"] != "discarded"])
@@ -440,8 +439,6 @@ def block_figure(game_id, player_id, card_id, i, j):
         board = game['board']
         
         figure, color = get_figure(board=board, i = i, j = j)
-
-        print(f"FORBIDDEN COLOR is {game["forbidden_color"]}, actual one is {color}")
 
         if game["forbidden_color"] == color:
             return FigureResult.INVALID
