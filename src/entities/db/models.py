@@ -37,6 +37,7 @@ class Game(Base):
     creator = Column(String, ForeignKey('Players.unique_id'))
     players = relationship('Player', secondary=game_player_association, back_populates='games')
     board = Column(String)
+    forbidden_color = Column(String, nullable=True, default=None)
 
 class Figure_card(Base):
     __tablename__ = 'Figure_cards'

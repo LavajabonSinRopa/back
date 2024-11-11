@@ -81,7 +81,8 @@ def get_game_status(game_id):
         "turn": game['turn'],
         "turn_timer": calculate_turn_time(game_id),
         "creator": game['creator'],
-        "players": get_players_status(game_id)
+        "players": get_players_status(game_id),
+        "forbidden_color": game["forbidden_color"]
     }
     return status
 
@@ -356,7 +357,7 @@ def get_figure(board, i, j):
                 vis[nx][ny] = True
                 processing.append([nx,ny])
                 figure.append([nx,ny])
-    return figure
+    return figure, color
 
 def complete_figure(game_id, player_id, card_id, i, j):
 
@@ -378,9 +379,10 @@ def complete_figure(game_id, player_id, card_id, i, j):
             raise Exception("Doesn't have card")
 
         board = game['board']
-        figure = get_figure(board=board, i = i, j = j)
+        figure, color = get_figure(board=board, i = i, j = j)
+        if game["forbidden_color"] == color:
+            return FigureResult.INVALID
 
-        #TODO: check color prohibido 
         if not figure_matches_type(figure_type=card_type, figure=figure):
             raise Exception("Figure doesn't match")
 
@@ -388,7 +390,7 @@ def complete_figure(game_id, player_id, card_id, i, j):
         # discard figure card
         repo.discard_card(card_id=card_id)
 
-        #TODO: update color prohibido
+        repo.set_forbidden_color(game_id, color)
 
         # Check if player ran out of cards after discarding
         player_cards = repo.get_player_figure_cards(player_id=player_id)['figure_cards']
@@ -406,7 +408,6 @@ def complete_figure(game_id, player_id, card_id, i, j):
         raise e
 
 def block_figure(game_id, player_id, card_id, i, j):
-
     try:
         game = repo.get_game(game_id)
         if player_id not in game['players']:
@@ -437,9 +438,11 @@ def block_figure(game_id, player_id, card_id, i, j):
 
         board = game['board']
         
-        figure = get_figure(board=board, i = i, j = j)
+        figure, color = get_figure(board=board, i = i, j = j)
 
-        #TODO: check color prohibido
+        if game["forbidden_color"] == color:
+            return FigureResult.INVALID
+
         if not figure_matches_type(figure_type=card_type, figure=figure):
             raise Exception("Figure doesn't match")
         
@@ -448,7 +451,8 @@ def block_figure(game_id, player_id, card_id, i, j):
         # block figure card
         repo.block_card(card_id=card_id)
 
-        #TODO: update color prohibido
+        repo.set_forbidden_color(game_id, color)
+
         return True
 
     except Exception as e:

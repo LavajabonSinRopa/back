@@ -628,6 +628,38 @@ class test_games_Repo(unittest.TestCase):
         mock_session.rollback.assert_called_once()
         mock_session.close.assert_called_once()
 
+    def test_set_forbidden_color(self):
+        pid = str(uuid.uuid4())
+        gid = str(uuid.uuid4())
+        repo.create_player(name="MESSI",unique_id=pid)
+        repo.create_game(unique_id=gid,name = "FUNALDELMUNDIAL",state="started",creator_id=pid)
+        repo.add_player_to_game(player_id=pid,game_id=gid)
+        
+        repo.set_forbidden_color(game_id=gid, color='red')
+        game = repo.get_game(game_id=gid)
+        self.assertEqual(game['forbidden_color'], 'red')
+        
+        repo.set_forbidden_color(game_id=gid, color=None)
+        game = repo.get_game(game_id=gid)
+        self.assertIsNone(game['forbidden_color'])
+        
+        with self.assertRaises(ValueError) as context:
+            repo.set_forbidden_color(game_id=gid, color='purple')
+        self.assertEqual(str(context.exception), "Invalid color. Must be 'red', 'green', 'blue', 'yellow' or None")
+
+    @patch('entities.db.gamesRepo.Session')
+    def test_set_forbidden_color_db_error(self, MockSession):
+        mock_session = MagicMock()
+        MockSession.return_value = mock_session
+        mock_session.commit.side_effect = SQLAlchemyError("Database error")
+        gid = str(uuid.uuid4())
+        
+        with self.assertRaises(SQLAlchemyError):
+            repo.set_forbidden_color(game_id=gid, color='red')
+            
+        mock_session.rollback.assert_called_once()
+        mock_session.close.assert_called_once()
+
 if __name__ == "__main__":
     unittest.main()
     repo.tear_down()
