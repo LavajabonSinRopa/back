@@ -90,7 +90,8 @@ async def leave_game(game_id: str, request: LeaveGameRequest):
     # Avisar a los sockets de la partida sobre el jugador que abandona.
     await game_socket_manager.broadcast_game(game_id,{"type":"PlayerLeft","payload": {'player_id' : request.player_id, 'player_name': player_name}})
     await game_socket_manager.broadcast_game(game_id, {"type":"ChatMessage","payload":
-                                                                       {"player_name":"Partida",
+                                                                       {   "time":99,
+                                                                           "player_name":"Partida",
                                                                            "player_id":"1",
                                                                            "message":f"{get_player_name(request.player_id)} abandonó la partida."}})
 
@@ -148,7 +149,7 @@ async def skip_turn(game_id: str, request: SkipTurnRequest):
         # Avisar a los demás jugadores del nuevo estado de la partida
         await game_socket_manager.broadcast_game(game_id,{"type":"TurnSkipped","payload": get_game_status(game_id=game_id)})
         await game_socket_manager.broadcast_game(game_id, {"type":"ChatMessage","payload":
-                                                                       {   
+                                                                       {   "time":99,
                                                                            "player_name":"Partida",
                                                                            "player_id":"1",
                                                                            "message":f"{get_player_name(request.player_id)} saltó su turno."}})
@@ -220,7 +221,7 @@ async def make_move(game_id: str,request: MakeMoveRequest):
     # Avisar a los sockets de la partida sobre el movimiento hecho
     await game_socket_manager.broadcast_game(game_id,{"type":"MovSuccess","payload": get_game_status(game_id)})
     await game_socket_manager.broadcast_game(game_id, {"type":"ChatMessage","payload":
-                                                                       {   
+                                                                       {   "time":99,
                                                                            "player_name":"Partida",
                                                                            "player_id":"1",
                                                                            "message":f"{get_player_name(request.player_id)} realizó un movimiento temporal."}})
@@ -240,7 +241,7 @@ async def unmake_move(game_id: str,request: UnmakeMoveRequest):
         remove_top_movement(game_id=game_id,player_id=request.player_id)
         await game_socket_manager.broadcast_game(game_id,{"type":"MoveUnMade","payload": get_game_status(game_id)})
         await game_socket_manager.broadcast_game(game_id, {"type":"ChatMessage","payload":
-                                                                       {  
+                                                                       {   "time":99,
                                                                            "player_name":"Partida",
                                                                            "player_id":"1",
                                                                            "message":f"{get_player_name(request.player_id)} deshizo un movimiento parcial."}})
@@ -256,7 +257,7 @@ async def apply_moves(game_id: str,request: applyTempMovementsRequest):
         apply_temp_movements(game_id=game_id,player_id=request.player_id)
         await game_socket_manager.broadcast_game(game_id,{"type":"MovesApplied","payload": get_game_status(game_id)})
         await game_socket_manager.broadcast_game(game_id, {"type":"ChatMessage","payload":
-                                                                       {   
+                                                                       {   "time":99,
                                                                            "player_name":"Partida",
                                                                            "player_id":"1",
                                                                            "message":f"{get_player_name(request.player_id)} aplicó sus movimientos parciales."}})
@@ -280,7 +281,7 @@ async def complete_own_figure(game_id: str, request: CompleteFigureRequest):
         elif result == FigureResult.COMPLETED:  
             await game_socket_manager.broadcast_game(game_id,{"type":"FigureMade","payload": get_game_status(game_id)})
             await game_socket_manager.broadcast_game(game_id, {"type":"ChatMessage","payload":
-                                                                       { 
+                                                                       {   "time":99,
                                                                            "player_name":"Partida",
                                                                            "player_id":"1",
                                                                            "message":f"{get_player_name(request.player_id)} descarto una carta de figura."}})
@@ -305,7 +306,8 @@ async def block_opponent_figure(game_id: str,request: BlockFigureRequest):
         else:
             await game_socket_manager.broadcast_game(game_id,{"type":"FigureBlocked","payload": get_game_status(game_id)})
             await game_socket_manager.broadcast_game(game_id, {"type":"ChatMessage","payload":
-                                                                       {   "player_name":"Partida",
+                                                                       {   "time":99,
+                                                                           "player_name":"Partida",
                                                                            "player_id":"1",
                                                                            "message":f"{get_player_name(request.player_id)} bloqueó una carta de {get_player_name(blocked_player_id)}."}})
     
