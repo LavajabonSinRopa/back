@@ -1,7 +1,7 @@
 # back/interfaces/game_endpoints.py
 
 from fastapi import APIRouter, HTTPException, Response
-from entities.game.game_utils import (add_game, get_games, get_game_by_id, 
+from entities.game.game_utils import (add_game, get_games, get_game_by_id, get_player_name,
                                       add_to_game, remove_player_from_game, pass_turn,
                                       start_game_by_id,get_game_status,is_players_turn,make_temp_movement,
                                       remove_top_movement, apply_temp_movements, complete_figure, FigureResult, block_figure,
@@ -14,7 +14,6 @@ from schemas.game_schemas import (CreateGameRequest, CreateGameResponse,
                                   applyTempMovementsRequest, CompleteFigureRequest, BlockFigureRequest)
 from interfaces.SocketManagers import public_manager, game_socket_manager 
 from sqlalchemy.exc import NoResultFound
-
 router = APIRouter()
 
 # POST a /games -- Crear partida. recibe JSON de tipo CreateGameRequest en el body
@@ -90,6 +89,11 @@ async def leave_game(game_id: str, request: LeaveGameRequest):
 
     # Avisar a los sockets de la partida sobre el jugador que abandona.
     await game_socket_manager.broadcast_game(game_id,{"type":"PlayerLeft","payload": {'player_id' : request.player_id, 'player_name': player_name}})
+    await game_socket_manager.broadcast_game(game_id, {"type":"ChatMessage","payload":
+                                                                       {   "time":99,
+                                                                           "player_name":"Partida",
+                                                                           "player_id":"1",
+                                                                           "message":f"{get_player_name(request.player_id)} abandonó la partida."}})
 
     # Avisar a los sockets de la partida de un potencial cambio en el tablero (si el jugador que abandona tenía movimientos parciales hechos)
     if(game["state"]!="waiting"):
@@ -126,9 +130,10 @@ async def cancel_game(game_id: str, request: LeaveGameRequest):
     
     # Avisar a los jugadores que se cancela la partida
     await game_socket_manager.broadcast_game(game_id,{"type":"GameClosed","payload": "Game Closed, disconnected"})
-
     # Cambiar estado del juego a "finished"
     finish_game(game_id)
+    
+    await public_manager.broadcast({"type":"CreatedGames","payload": get_games()})
     
     return Response(status_code=200)
 
@@ -144,6 +149,11 @@ async def skip_turn(game_id: str, request: SkipTurnRequest):
     if(skipped):
         # Avisar a los demás jugadores del nuevo estado de la partida
         await game_socket_manager.broadcast_game(game_id,{"type":"TurnSkipped","payload": get_game_status(game_id=game_id)})
+        await game_socket_manager.broadcast_game(game_id, {"type":"ChatMessage","payload":
+                                                                       {   "time":99,
+                                                                           "player_name":"Partida",
+                                                                           "player_id":"1",
+                                                                           "message":f"{get_player_name(request.player_id)} saltó su turno."}})
         return Response(status_code=200)
 
     #Si no pudo saltear
@@ -211,6 +221,11 @@ async def make_move(game_id: str,request: MakeMoveRequest):
     
     # Avisar a los sockets de la partida sobre el movimiento hecho
     await game_socket_manager.broadcast_game(game_id,{"type":"MovSuccess","payload": get_game_status(game_id)})
+    await game_socket_manager.broadcast_game(game_id, {"type":"ChatMessage","payload":
+                                                                       {   "time":99,
+                                                                           "player_name":"Partida",
+                                                                           "player_id":"1",
+                                                                           "message":f"{get_player_name(request.player_id)} realizó un movimiento temporal."}})
 
     return Response(status_code=200)
 
@@ -226,6 +241,11 @@ async def unmake_move(game_id: str,request: UnmakeMoveRequest):
     try:
         remove_top_movement(game_id=game_id,player_id=request.player_id)
         await game_socket_manager.broadcast_game(game_id,{"type":"MoveUnMade","payload": get_game_status(game_id)})
+        await game_socket_manager.broadcast_game(game_id, {"type":"ChatMessage","payload":
+                                                                       {   "time":99,
+                                                                           "player_name":"Partida",
+                                                                           "player_id":"1",
+                                                                           "message":f"{get_player_name(request.player_id)} deshizo un movimiento parcial."}})
     except:
         raise HTTPException(status_code=403, detail="Invalid Move")
     return Response(status_code=200)
@@ -237,6 +257,11 @@ async def apply_moves(game_id: str,request: applyTempMovementsRequest):
             raise HTTPException(status_code=403, detail="No es tu turno")
         apply_temp_movements(game_id=game_id,player_id=request.player_id)
         await game_socket_manager.broadcast_game(game_id,{"type":"MovesApplied","payload": get_game_status(game_id)})
+        await game_socket_manager.broadcast_game(game_id, {"type":"ChatMessage","payload":
+                                                                       {   "time":99,
+                                                                           "player_name":"Partida",
+                                                                           "player_id":"1",
+                                                                           "message":f"{get_player_name(request.player_id)} aplicó sus movimientos parciales."}})
     except:
         raise HTTPException(status_code=403, detail="Invalid Move")
     return Response(status_code=200)
@@ -256,6 +281,11 @@ async def complete_own_figure(game_id: str, request: CompleteFigureRequest):
             await game_socket_manager.broadcast_game(game_id,{"type":"GameWon","payload": {'player_id' : request.player_id, 'player_name': winner_name}})
         elif result == FigureResult.COMPLETED:  
             await game_socket_manager.broadcast_game(game_id,{"type":"FigureMade","payload": get_game_status(game_id)})
+            await game_socket_manager.broadcast_game(game_id, {"type":"ChatMessage","payload":
+                                                                       {   "time":99,
+                                                                           "player_name":"Partida",
+                                                                           "player_id":"1",
+                                                                           "message":f"{get_player_name(request.player_id)} descarto una carta de figura."}})
         else:  # FigureResult.INVALID
             raise HTTPException(status_code=403, detail="You can't use the forbidden color!")
 
@@ -270,12 +300,17 @@ async def complete_own_figure(game_id: str, request: CompleteFigureRequest):
 @router.post("/{game_id}/blockFigure")
 async def block_opponent_figure(game_id: str,request: BlockFigureRequest):
     try:
-        result = block_figure(game_id=game_id, player_id=request.player_id, card_id=request.card_id, i = request.y, j = request.x)
+        result, blocked_player_id = block_figure(game_id=game_id, player_id=request.player_id, card_id=request.card_id, i = request.y, j = request.x)
         
         if result == FigureResult.INVALID:
             raise HTTPException(status_code=403, detail="You can't use the forbidden color!")
         else:
             await game_socket_manager.broadcast_game(game_id,{"type":"FigureBlocked","payload": get_game_status(game_id)})
+            await game_socket_manager.broadcast_game(game_id, {"type":"ChatMessage","payload":
+                                                                       {   "time":99,
+                                                                           "player_name":"Partida",
+                                                                           "player_id":"1",
+                                                                           "message":f"{get_player_name(request.player_id)} bloqueó una carta de {get_player_name(blocked_player_id)}."}})
     
     except Exception as e:
         print(e)
