@@ -6,6 +6,8 @@ from pydantic import BaseModel
 class CreateGameRequest(BaseModel):
     game_name: str
     player_name: str
+    password: str = ""
+    
 
 # Formato de respuesta de POST a /games
 class CreateGameResponse(BaseModel):
@@ -15,6 +17,7 @@ class CreateGameResponse(BaseModel):
 # POST a /games/<game_id>/join
 class JoinGameRequest(BaseModel):
     player_name: str
+    password: str = ""
 
 # Respuesta de POST a games/<game_id>/join
 class JoinGameResponse(BaseModel):
@@ -49,3 +52,15 @@ class UnmakeMoveRequest(BaseModel):
     
 class applyTempMovementsRequest(BaseModel):
     player_id: str
+
+class CompleteFigureRequest(BaseModel):
+    player_id : str
+    card_id : str
+    x : int
+    y : int
+
+class BlockFigureRequest(BaseModel):
+    player_id : str
+    card_id : str
+    x : int
+    y : int

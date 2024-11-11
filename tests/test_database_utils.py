@@ -48,6 +48,29 @@ class test_games_Repo(unittest.TestCase):
         mock_session.rollback.assert_called_once()
         mock_session.close.assert_called_once()
     
+    def test_create_game_public(self):
+        pid = str(uuid.uuid4())
+        gid = str(uuid.uuid4())
+        repo.create_game(unique_id=gid,name = "FUNALDELMUNDIAL",state="started",creator_id=pid)
+        game = repo.get_game(game_id=gid)
+        assert game['type'] == 'public'
+    
+    def test_create_game_public2(self):
+        pid = str(uuid.uuid4())
+        gid = str(uuid.uuid4())
+        repo.create_game(unique_id=gid,name = "FUNALDELMUNDIAL",state="started",creator_id=pid, password = "")
+        game = repo.get_game(game_id=gid)
+        assert game['type'] == 'public'
+    
+    
+    def test_create_game_private(self):
+        pid = str(uuid.uuid4())
+        gid = str(uuid.uuid4())
+        repo.create_game(unique_id=gid,name = "FUNALDELMUNDIAL",state="started",creator_id=pid, password = "diegomaradona")
+        game = repo.get_game(game_id=gid)
+        assert game['type'] == 'private'
+    
+    
     def test_create_get_join(self):
         repo.tear_down()
         player_ids = []
@@ -128,6 +151,37 @@ class test_games_Repo(unittest.TestCase):
 
         # Ver que se llama close()
         mock_session.close.assert_called_once()
+    
+    def test_get_player_figure_cards(self):
+        repo.tear_down()
+        player_id = str(uuid.uuid4())
+
+        repo.create_player(name="MESSI", unique_id=player_id)
+        figure_cards = repo.get_player_figure_cards(player_id=player_id)
+        
+        assert 'figure_cards' in figure_cards
+        assert isinstance(figure_cards['figure_cards'], list)
+        for card in figure_cards['figure_cards']:
+            assert 'type' in card
+            assert 'unique_id' in card
+            assert 'state' in card
+
+    @patch('entities.db.gamesRepo.Session')
+    def test_get_player_figure_cards_no_result(self, MockSession):
+        mock_session = MagicMock()
+        MockSession.return_value = mock_session
+
+        # Levantar NoResultFound
+        mock_session.query.return_value.filter_by.return_value.one.side_effect = NoResultFound()
+
+        pid = str(uuid.uuid4())
+
+        with self.assertRaises(ValueError) as context:
+            repo.get_player_figure_cards(player_id=pid)
+
+        self.assertEqual(str(context.exception), "Game_model does not exist")
+
+        mock_session.close.assert_called_once()
 
     @patch('entities.db.gamesRepo.Session')
     def test_add_player_to_game_db_error(self, MockSession):
@@ -174,7 +228,28 @@ class test_games_Repo(unittest.TestCase):
         # Ver que se llama close()
         mock_session.close.assert_called_once()
 
+    def test_add_player_to_game_password(self):
+        pid = str(uuid.uuid4())
+        gid = str(uuid.uuid4())
+        repo.create_player(name="MESSI",unique_id=pid)
+        repo.create_game(unique_id=gid,name = "FUNALDELMUNDIAL",state="waiting",creator_id=pid, password = "diegomaradona")
+        repo.add_player_to_game(player_id=pid, game_id=gid, password = "diegomaradona")
+        game = repo.get_game(game_id=gid)
+        assert pid in game['players']
     
+    def test_add_player_to_game_bad_password(self):
+        pid = str(uuid.uuid4())
+        gid = str(uuid.uuid4())
+        repo.create_player(name="MESSI",unique_id=pid)
+        repo.create_game(unique_id=gid,name = "FUNALDELMUNDIAL",state="waiting",creator_id=pid, password = "diegomaradona")
+          
+        with self.assertRaises(ValueError) as context:
+            repo.add_player_to_game(player_id=pid, game_id=gid, password="pele")
+        
+        self.assertEqual(str(context.exception), "Incorrect password")
+        game = repo.get_game(game_id=gid)
+        assert pid not in game['players']
+
     def test_create_card(self):
         pid,gid = str(uuid.uuid4()),str(uuid.uuid4())
         repo.create_player(name="MESSI",unique_id=pid)
@@ -468,6 +543,121 @@ class test_games_Repo(unittest.TestCase):
         self.assertEqual(str(context.exception), "Game_model does not exist")
 
         # Verificar que se llama a close()
+        mock_session.close.assert_called_once()
+
+    def test_discard_card(self):
+        pid = str(uuid.uuid4())
+        gid = str(uuid.uuid4())
+        repo.create_player(name="MESSI",unique_id=pid)
+        repo.create_game(unique_id=gid,name = "FUNALDELMUNDIAL",state="started",creator_id=pid)
+        repo.add_player_to_game(player_id=pid,game_id=gid)
+        repo.create_card(card_type=2,card_kind='figure',player_id=pid,game_id=gid,state="not drawn")
+        repo.drawn_figure_card(player_id=pid)
+        assert repo.get_player(pid)['figure_cards'][0]['state'] == "drawn"
+        card_id = repo.get_player(player_id = pid)['figure_cards'][0]['unique_id']
+        repo.discard_card(card_id = card_id)
+        assert repo.get_card(card_id=card_id)['state'] == 'discarded'
+
+    def test_block_card(self):
+        pid = str(uuid.uuid4())
+        gid = str(uuid.uuid4())
+        repo.create_player(name="MESSI",unique_id=pid)
+        repo.create_game(unique_id=gid,name = "FUNALDELMUNDIAL",state="started",creator_id=pid)
+        repo.add_player_to_game(player_id=pid,game_id=gid)
+        repo.create_card(card_type=2,card_kind='figure',player_id=pid,game_id=gid,state="not drawn")
+        repo.drawn_figure_card(player_id=pid)
+        assert repo.get_player(pid)['figure_cards'][0]['state'] == "drawn"
+        card_id = repo.get_player(player_id = pid)['figure_cards'][0]['unique_id']
+        repo.block_card(card_id = card_id)
+        assert repo.get_card(card_id=card_id)['state'] == 'blocked'
+
+    def test_unblock_card(self):
+        pid = str(uuid.uuid4())
+        gid = str(uuid.uuid4())
+        repo.create_player(name="MESSI",unique_id=pid)
+        repo.create_game(unique_id=gid,name = "FUNALDELMUNDIAL",state="started",creator_id=pid)
+        repo.add_player_to_game(player_id=pid,game_id=gid)
+        repo.create_card(card_type=2,card_kind='figure',player_id=pid,game_id=gid,state="not drawn")
+        repo.drawn_figure_card(player_id=pid)
+        assert repo.get_player(pid)['figure_cards'][0]['state'] == "drawn"
+        card_id = repo.get_player(player_id = pid)['figure_cards'][0]['unique_id']
+        repo.block_card(card_id = card_id)
+        assert repo.get_card(card_id=card_id)['state'] == 'blocked'
+        repo.unblock_card(card_id=card_id)
+        assert repo.get_card(card_id=card_id)['state'] == 'drawn'
+    
+    def test_get_turn_time(self):
+        pid = str(uuid.uuid4())
+        gid = str(uuid.uuid4())
+        repo.create_player(name="MESSI",unique_id=pid)
+        repo.create_game(unique_id=gid,name="FUNALDELMUNDIAL",state="started",creator_id=pid)
+        repo.add_player_to_game(player_id=pid,game_id=gid)
+        repo.start_turn_timer(game_id=gid)
+        turn_time = repo.get_turn_time(game_id=gid)
+        self.assertIsNotNone(turn_time)
+
+    @patch('entities.db.gamesRepo.Session')
+    def test_get_turn_time_db_error(self, MockSession):
+        mock_session = MagicMock()
+        MockSession.return_value = mock_session
+        mock_session.query.return_value.filter_by.return_value.one.side_effect = SQLAlchemyError("Database error")
+        gid = str(uuid.uuid4())
+        with self.assertRaises(SQLAlchemyError):
+            repo.get_turn_time(game_id=gid)
+        mock_session.rollback.assert_called_once()
+        mock_session.close.assert_called_once()
+
+    def test_start_turn_timer(self):
+        pid = str(uuid.uuid4())
+        gid = str(uuid.uuid4())
+        repo.create_player(name="MESSI",unique_id=pid)
+        repo.create_game(unique_id=gid,name="FUNALDELMUNDIAL",state="started",creator_id=pid)
+        repo.add_player_to_game(player_id=pid,game_id=gid)
+        repo.start_turn_timer(game_id=gid)
+        turn_time = repo.get_turn_time(game_id=gid)
+        self.assertIsNotNone(turn_time)
+
+    @patch('entities.db.gamesRepo.Session')
+    def test_start_turn_timer_db_error(self, MockSession):
+        mock_session = MagicMock()
+        MockSession.return_value = mock_session
+        mock_session.query.return_value.filter_by.return_value.one.side_effect = SQLAlchemyError("Database error")
+        gid = str(uuid.uuid4())
+        with self.assertRaises(SQLAlchemyError):
+            repo.start_turn_timer(game_id=gid)
+        mock_session.rollback.assert_called_once()
+        mock_session.close.assert_called_once()
+
+    def test_set_forbidden_color(self):
+        pid = str(uuid.uuid4())
+        gid = str(uuid.uuid4())
+        repo.create_player(name="MESSI",unique_id=pid)
+        repo.create_game(unique_id=gid,name = "FUNALDELMUNDIAL",state="started",creator_id=pid)
+        repo.add_player_to_game(player_id=pid,game_id=gid)
+        
+        repo.set_forbidden_color(game_id=gid, color='red')
+        game = repo.get_game(game_id=gid)
+        self.assertEqual(game['forbidden_color'], 'red')
+        
+        repo.set_forbidden_color(game_id=gid, color=None)
+        game = repo.get_game(game_id=gid)
+        self.assertIsNone(game['forbidden_color'])
+        
+        with self.assertRaises(ValueError) as context:
+            repo.set_forbidden_color(game_id=gid, color='purple')
+        self.assertEqual(str(context.exception), "Invalid color. Must be 'red', 'green', 'blue', 'yellow' or None")
+
+    @patch('entities.db.gamesRepo.Session')
+    def test_set_forbidden_color_db_error(self, MockSession):
+        mock_session = MagicMock()
+        MockSession.return_value = mock_session
+        mock_session.commit.side_effect = SQLAlchemyError("Database error")
+        gid = str(uuid.uuid4())
+        
+        with self.assertRaises(SQLAlchemyError):
+            repo.set_forbidden_color(game_id=gid, color='red')
+            
+        mock_session.rollback.assert_called_once()
         mock_session.close.assert_called_once()
 
 if __name__ == "__main__":

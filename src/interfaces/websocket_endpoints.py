@@ -1,7 +1,7 @@
 from fastapi import WebSocket, WebSocketDisconnect
-from entities.game.game_utils import get_games_with_player_names, get_players_names, get_game_status, get_game_by_id
+from entities.game.game_utils import get_games_with_player_names, get_players_names, get_player_name, get_game_status, get_game_by_id
 from interfaces.SocketManagers import public_manager, game_socket_manager
-
+import datetime
 async def public_games(websocket: WebSocket):
     await public_manager.connect(websocket)
     print(f"Public WS Connections:\n {public_manager.connections}")
@@ -30,11 +30,22 @@ async def connect_game(websocket : WebSocket, game_id, player_id):
                 
             try:
                 while True:
-                    await websocket.receive_text()
+                    chat_message = await websocket.receive_text()
+                    if chat_message != None and chat_message != "":
+                        await game_socket_manager.broadcast_game(game_id, {"type":"ChatMessage","payload":
+                                                                       {   "time":datetime.datetime.now().strftime("%H:%M:%S"),
+                                                                           "player_name":get_player_name(player_id),
+                                                                           "player_id":player_id,
+                                                                           "message":chat_message}})
             except WebSocketDisconnect:
                 await game_socket_manager.user_disconnect(game_id, player_id)
         else:
             await websocket.accept()
-            await websocket.send_json({"type":"ERROR","payload":"Invalid game_id or player_id"})
+            await websocket.send_json({"type":"ERROR","payload":"Invalid player_id"})
             await websocket.close()
+    else:
+        await websocket.accept()
+        await websocket.send_json({"type":"ERROR","payload":"Invalid game_id"})
+        await websocket.close()
             
+        

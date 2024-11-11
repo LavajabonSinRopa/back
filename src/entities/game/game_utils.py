@@ -1,21 +1,35 @@
+from enum import Enum
 from ..db.gamesRepo import repo
 from sqlalchemy.exc import NoResultFound
 import uuid
+import random
+import datetime
 from ..player.player_utils import drawn_figure_card, take_move_card
 from ..cards.movent_cards import can_move_to
-from ..cards.figure_cards import figure_matches
+from ..cards.figure_cards import figure_exists, figure_matches_type
+
+BOARD_LEN = 6
 
 
-def add_game(game_name, creator_id):
-    new_game_id = repo.create_game(unique_id = str(uuid.uuid4()), name = game_name, state = "waiting", creator_id = creator_id)
+class FigureResult(Enum):
+    INVALID = 0
+    COMPLETED = 1
+    PLAYER_WON = 2
+
+
+def add_game(game_name, creator_id, password = ""):
+    new_game_id = repo.create_game(unique_id = str(uuid.uuid4()), name = game_name, state = "waiting", creator_id = creator_id, password = password)
     #Creator_id is added as player
-    repo.add_player_to_game(player_id=creator_id, game_id=new_game_id)
+    repo.add_player_to_game(player_id=creator_id, game_id=new_game_id,password=password)
     return new_game_id
     
 def get_games():
     games = repo.get_games()
     games_waiting = [game for game in games if game['state'] == 'waiting'] 
     return games_waiting
+
+def get_all_games():
+    return repo.get_games()
 
 def get_game_by_id(game_id):
     """
@@ -49,11 +63,9 @@ def get_game_status(game_id):
     
     board = highlight_figures(game['board'])
 
-    #resaltar casillas usadas en movimientos temporales --> primera letra en mayuscula
+    #resaltar casillas usadas en movimientos temporales --> % al final del color
     player_id = game['players'][game['turn']%len(game['players'])]
     moves = repo.get_player_movements(player_id=player_id)
-
-    print(moves)
 
     for move in moves:
         if board[move['from_y']][move['from_x']][-1] != '%':
@@ -67,8 +79,10 @@ def get_game_status(game_id):
         "state": game['state'],
         "board": board,
         "turn": game['turn'],
+        "turn_timer": calculate_turn_time(game_id),
         "creator": game['creator'],
-        "players": get_players_status(game_id)
+        "players": get_players_status(game_id),
+        "forbidden_color": game["forbidden_color"]
     }
     return status
 
@@ -85,6 +99,7 @@ def get_games_with_player_names():
             {
             "unique_id": game['unique_id'],
             "name": game['name'],
+            "type": game['type'],
             "state": game['state'],
             "turn": game['turn'],
             "creator": game['creator'],
@@ -94,7 +109,7 @@ def get_games_with_player_names():
             for game in games
         ]
 
-def add_to_game(player_id,game_id):
+def add_to_game(player_id,game_id, password = ""):
     try:
         game = repo.get_game(game_id)
 
@@ -102,18 +117,25 @@ def add_to_game(player_id,game_id):
         if len(game["players"]) >= 4 or game['state'] != 'waiting':
             return -1
         
-        repo.add_player_to_game(player_id=player_id,game_id=game_id)
+        repo.add_player_to_game(player_id=player_id,game_id=game_id, password = password)
     except Exception as e:
         raise e
 
 def remove_player_from_game(player_id, game_id):
     try:
         repo.remove_player_from_game(player_id=player_id, game_id=game_id)
+        remove_all_movements(player_id=player_id,game_id=game_id)
     except Exception as e:
         raise e
     
+def get_player_name(player_id):
+    return repo.get_player(player_id)["name"]
+    
 def get_players_names(game_id):
     return get_game_by_id(game_id=game_id)['player_names']
+
+def finish_game(game_id):
+    repo.edit_game_state(game_id=game_id, new_state="finished")
 
 def is_players_turn(game_id, player_id):
     try:
@@ -121,6 +143,13 @@ def is_players_turn(game_id, player_id):
     except Exception as e:
         raise e
     return game['players'][game['turn']%len(game['players'])]==player_id
+
+def calculate_turn_time(game_id):
+    start_turn_time = repo.get_turn_time(game_id)
+    now = datetime.datetime.now()
+    difference = now - start_turn_time
+    seconds_difference = difference.total_seconds()
+    return int(120 - seconds_difference)
 
 def pass_turn(game_id, player_id):
     """
@@ -154,6 +183,16 @@ def pass_turn(game_id, player_id):
         while n<3:
             take_move_card(player_id,game_id)
             n+=1
+        
+        cards_in_hand = repo.get_player(player_id=player_id)['figure_cards']
+        is_blocked = False
+        for card in cards_in_hand:
+            if card['state'] == 'blocked':
+                is_blocked = True
+        n = len(cards_in_hand)
+        while n<3 and not is_blocked:
+            drawn_figure_card(player_id)
+            n+=1
 
         repo.pass_turn(game_id=game_id)
 
@@ -181,6 +220,9 @@ def create_figure_cards(game_id):
     easy_cards = [0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6]
     hard_cards = [7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 23, 24, 24]
 
+    random.shuffle(hard_cards)
+    random.shuffle(easy_cards)
+
     # Distribuir cartas fáciles
     for player in get_players_status(game_id):
         player_id = player['unique_id']
@@ -201,6 +243,7 @@ def start_game_by_id(game_id):
     game = get_game_by_id(game_id)
     if game["state"] == "waiting":
         repo.edit_game_state(game_id,"started")
+        repo.start_turn_timer(game_id)
         repo.create_board(game_id)
         create_move_deck_for_game(game_id)
         create_figure_cards(game_id)
@@ -213,7 +256,7 @@ def start_game_by_id(game_id):
 
 def is_in_board(x):
     #TODO make global variable for board size
-    return x >= 0 and x <= 5
+    return x >= 0 and x < BOARD_LEN
 
 def make_temp_movement(game_id, player_id, card_id, from_x, from_y, to_x, to_y):
     # assumes that player is in game
@@ -238,9 +281,7 @@ def make_temp_movement(game_id, player_id, card_id, from_x, from_y, to_x, to_y):
     
         if(can_move_to(from_x=from_x, from_y=from_y, to_x=to_x, to_y=to_y, card_type=card_type)):
             repo.add_movement(player_id=player_id, from_x=from_x, from_y=from_y, to_x=to_x, to_y=to_y, card_id=card_id)
-            print(repo.get_board(game_id=game_id))
             repo.swap_positions_board(game_id=game_id, x1 = from_x, y1 = from_y, x2 = to_x, y2 = to_y)
-            print(repo.get_board(game_id=game_id))
             return True
         return False
     
@@ -273,14 +314,13 @@ def highlight_figures(board: list[list[str]]) -> list[list[str]]:
                         vis[nx][ny] = True
                         processing.append([nx,ny])
                         figure.append([nx,ny])
-            if figure_matches(figure):
+            if figure_exists(figure):
                 for square in figure:
                     board[square[0]][square[1]] = board[square[0]][square[1]].upper()
     return board
 
 
 def remove_top_movement(game_id, player_id):
-    
     try:
         game = repo.get_game(game_id)
         movements = repo.get_player_movements(player_id=player_id)
@@ -294,6 +334,130 @@ def remove_top_movement(game_id, player_id):
 def apply_temp_movements(player_id):
     repo.apply_temp_movements(player_id=player_id)
 
+# cancels all temp moves made so far
+def remove_all_movements(game_id, player_id):
+    while(len(repo.get_player_movements(player_id=player_id))>0):
+        remove_top_movement(game_id=game_id,player_id=player_id)
+
+def get_figure(board, i, j):
+    vis = [[False]*BOARD_LEN for _ in range(BOARD_LEN)]
+    vis[i][j] = True
+    processing = [[i,j]]
+    figure = [[i,j]]
+    color = board[i][j]
+    while(len(processing)>0):
+        square = processing[-1]
+        processing.pop()
+        x,y = square[0],square[1]
+        for d in directions:
+            nx,ny = x + d[0], y + d[1]
+            if not is_in_board(nx) or not is_in_board(ny):
+                continue
+            if not vis[nx][ny] and board[nx][ny] == color:
+                vis[nx][ny] = True
+                processing.append([nx,ny])
+                figure.append([nx,ny])
+    return figure, color
+
+def complete_figure(game_id, player_id, card_id, i, j):
+
+    try:
+        game = repo.get_game(game_id)
+        if player_id not in game['players']:
+            raise Exception("Not in game")
+        if not is_players_turn(game_id=game_id, player_id=player_id):
+            raise Exception("Not your turn")
+        
+        card_type = -1
+        cards = repo.get_player(player_id=player_id)['figure_cards']
+        for card in cards:
+            if card['unique_id'] == card_id:
+                card_type = card['type']
+                if card['state'] == 'blocked':
+                    raise Exception("This card is already blocked!")
+        if card_type == -1:
+            raise Exception("Doesn't have card")
+
+        board = game['board']
+        figure, color = get_figure(board=board, i = i, j = j)
+        if game["forbidden_color"] == color:
+            return FigureResult.INVALID
+
+        if not figure_matches_type(figure_type=card_type, figure=figure):
+            raise Exception("Figure doesn't match")
+
+        apply_temp_movements(player_id=player_id)
+        # discard figure card
+        repo.discard_card(card_id=card_id)
+
+        repo.set_forbidden_color(game_id, color)
+
+        # Check if player ran out of cards after discarding
+        player_cards = repo.get_player_figure_cards(player_id=player_id)['figure_cards']
+        remaining_cards = len([fcard for fcard in player_cards if fcard["state"] != "discarded"])
+
+        if remaining_cards <= 0:
+            return FigureResult.PLAYER_WON
+            
+        cards_in_hand = repo.get_player(player_id=player_id)['figure_cards']
+        if(len(cards_in_hand)==1):
+            repo.unblock_card(card_id=cards_in_hand[0]['unique_id'])
+        return FigureResult.COMPLETED
+
+    except Exception as e:
+        raise e
+
+def block_figure(game_id, player_id, card_id, i, j):
+    try:
+        game = repo.get_game(game_id)
+        if player_id not in game['players']:
+            raise Exception("Not in game")
+        if not is_players_turn(game_id=game_id, player_id=player_id):
+            raise Exception("Not your turn")
+        
+        card_type = -1
+        owner_blocked = False
+        for player in repo.get_game(game_id=game_id)['players']:
+            if(player_id==player):
+                continue
+            player_cards = repo.get_player(player_id=player)['figure_cards']
+            print(player_cards)
+            for card in player_cards:
+                if card['unique_id'] == card_id:
+                    card_type = card['type']
+                    if card['state'] == 'blocked':
+                        raise Exception("Card is already blocked")
+                blocked_player_id = player
+                if card['state']== 'blocked':
+                    owner_blocked = True
+        
+        if card_type == -1:
+            raise Exception("Card non existent")
+
+        if owner_blocked:
+            raise Exception("Owner of the card has a blocked card already")
+
+        board = game['board']
+        
+        figure, color = get_figure(board=board, i = i, j = j)
+
+        if game["forbidden_color"] == color:
+            return FigureResult.INVALID, -1
+
+        if not figure_matches_type(figure_type=card_type, figure=figure):
+            raise Exception("Figure doesn't match")
+        
+        apply_temp_movements(player_id=player_id)
+
+        # block figure card
+        repo.block_card(card_id=card_id)
+
+        repo.set_forbidden_color(game_id, color)
+
+        return True, blocked_player_id
+
+    except Exception as e:
+        raise e
 
 def delete_all():
     repo.tear_down()

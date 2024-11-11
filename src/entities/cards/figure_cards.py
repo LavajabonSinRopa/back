@@ -200,7 +200,7 @@ def generate_cards():
     print("]")
 
 #RETURN TRUE IF FIGURE EXISTS in O(log(len(hard_cards))*HARD_FIGURE_SZ)
-def figure_matches(card):
+def figure_exists(card):
     card = normalize_card(card)
     if(len(card) == EASY_FIGURE_SZ):
         l,r = 0,len(easy_cards)-1
@@ -222,12 +222,38 @@ def figure_matches(card):
         return hard_cards[l+1] == card
     return False
 
+def figure_matches_type(figure_type, figure):
+    figure = normalize_card(figure)
+    # assuming easy figures from 0.., hard from len(easy)..
+    if figure_type < len(figure_card_types_easy):
+        possible_match = normalize_card(figure_card_types_easy[figure_type])
+    else:
+        figure_type -= len(figure_card_types_easy)
+        if figure_type >= len(figure_card_types_hard):
+            return False
+        possible_match = normalize_card(figure_card_types_hard[figure_type])
+
+    if figure == possible_match:
+        return True
+    for rotation in range(3):
+        possible_match = normalize_card(rotate_card(possible_match))
+        if figure == possible_match:
+            return True
+
+    return False
+
 if __name__ == "__main__":
-    # for card in figure_card_types_hard:
-    #     print_figure(card)
-    #     print("--------------")
-    # for card in figure_card_types_easy:
-    #     print_figure(card)
-    #     print("--------------")
-    generate_cards()
+    #printea las figuras en el orden de su codigo
+    code = 0
+    for card in figure_card_types_easy:
+        print("code = ", code)
+        code += 1
+        print_figure(card)
+        print("--------------")
+    for card in figure_card_types_hard:
+        print("code = ", code)
+        code += 1
+        print_figure(card)
+        print("--------------")
+    #generate_cards()
     

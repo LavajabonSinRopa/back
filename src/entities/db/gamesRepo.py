@@ -4,16 +4,23 @@ from .models import Game, Player, engine, Figure_card, Movement_card, Movement
 from typing import List
 import uuid
 import random
+import datetime
 
 # Create a session
 Session = sessionmaker(bind=engine)
 
 class gameRepository:
     @staticmethod
-    def create_game(unique_id: str,name: str, state: str, creator_id: str) -> Game:
+    def create_game(unique_id: str,name: str, state: str, creator_id: str, password:str = "") -> Game:
+        
+        if password == None or password == "":
+            game_type = "public"
+            password = ""
+        else:
+            game_type = "private"
         session = Session()
         try:
-            new_game = Game(unique_id = unique_id, name=name, state=state, creator=creator_id, turn=0)
+            new_game = Game(unique_id = unique_id, name=name, state=state, creator=creator_id, turn=0,type=game_type, password=password)
             session.add(new_game)
             session.commit()
             return new_game.unique_id
@@ -45,12 +52,14 @@ class gameRepository:
             return {
                 "unique_id": game.unique_id,
                 "name": game.name,  
+                "type": game.type,
                 "state": game.state,
                 "turn": game.turn,
                 "creator": game.creator,
                 "players": [player.unique_id for player in game.players],
                 "player_names": [player.name for player in game.players],
-                "board": gameRepository.get_board(game_id)
+                "board": gameRepository.get_board(game_id),
+                "forbidden_color": game.forbidden_color
             }
         except NoResultFound:
             raise ValueError("Game_model does not exist")
@@ -62,13 +71,24 @@ class gameRepository:
         session = Session()
         try:
             player = session.query(Player).filter_by(unique_id=player_id).one()
-            print('PLAYER FOUND')
-            print(player)
             return {
                 "unique_id": player.unique_id,
                 "name": player.name,
-                "figure_cards": [{'type': fcard.card_type, 'state': fcard.state} for fcard in player.figure_cards if fcard.state != 'not drawn'],
+                "figure_cards": [{'type': fcard.card_type, 'unique_id': fcard.unique_id, 'state': fcard.state} for fcard in player.figure_cards if not fcard.state == 'not drawn' and not fcard.state == 'discarded'],
                 "movement_cards": [{'type': mcard.card_type, 'unique_id': mcard.unique_id, 'state': mcard.state} for mcard in player.movement_cards]
+            }
+        except NoResultFound:
+            raise ValueError("Game_model does not exist")
+        finally:
+            session.close()
+
+    @staticmethod
+    def get_player_figure_cards(player_id : str) -> dict:
+        session = Session()
+        try:
+            player = session.query(Player).filter_by(unique_id=player_id).one()
+            return {
+                "figure_cards": [{'type': fcard.card_type, 'unique_id': fcard.unique_id, 'state': fcard.state} for fcard in player.figure_cards]
             }
         except NoResultFound:
             raise ValueError("Game_model does not exist")
@@ -84,6 +104,7 @@ class gameRepository:
                 {
                     "unique_id": game.unique_id,
                     "name": game.name,
+                    "type": game.type,
                     "state": game.state,
                     "turn": game.turn,
                     "creator": game.creator,
@@ -115,12 +136,15 @@ class gameRepository:
             session.close()
     
     @staticmethod
-    def add_player_to_game(player_id: str, game_id: str):
+    def add_player_to_game(player_id: str, game_id: str, password:str = ""):
         session = Session()
         try:
             # Retrieve the player and game
             player = session.query(Player).filter_by(unique_id=player_id).one()
             game = session.query(Game).filter_by(unique_id=game_id).one()
+            
+            if game.type == "private" and game.password != password:
+                raise ValueError("Incorrect password")
             
             # Add the player to the game
             if player not in game.players:
@@ -228,11 +252,37 @@ class gameRepository:
             session.close()
 
     @staticmethod
+    def get_turn_time(game_id: str):
+        session = Session()
+        try:
+            game = session.query(Game).filter_by(unique_id=game_id).one()
+            return game.turn_start_time
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            session.close()
+
+    @staticmethod
+    def start_turn_timer(game_id: str):
+        session = Session()
+        try:
+            game = session.query(Game).filter_by(unique_id=game_id).one()
+            game.turn_start_time = datetime.datetime.now()
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            session.close()
+
+    @staticmethod
     def pass_turn(game_id: str):
         session = Session()
         try :
             game = session.query(Game).filter_by(unique_id=game_id).one()            
             game.turn += 1
+            game.turn_start_time = datetime.datetime.now()
             session.commit()
         except Exception as e:
             session.rollback()
@@ -481,16 +531,74 @@ class gameRepository:
         finally:
             session.close()
 
-
     @staticmethod
     def get_player_movements(player_id: str) -> dict:
         session = Session()
         try:
             player = session.query(Player).filter_by(unique_id=player_id).one()
-            print(player.movements)
             return [{'from_x' : m.from_x, 'from_y' : m.from_y, 'to_x' : m.to_x, 'to_y' : m.to_y} for m in player.movements]
         except NoResultFound:
             raise ValueError("Game_model does not exist")
+        finally:
+            session.close()
+
+    @staticmethod
+    def discard_card(card_id: str):
+        session = Session()
+        try:
+            # Retrieve the card
+            card = session.query(Figure_card).filter_by(unique_id=card_id).one_or_none()
+            card.state = 'discarded'
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            session.close()
+
+    @staticmethod
+    def block_card(card_id: str):
+        session = Session()
+        try:
+            # Retrieve the card
+            card = session.query(Figure_card).filter_by(unique_id=card_id).one_or_none()
+            card.state = 'blocked'
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            session.close()
+
+    @staticmethod
+    def unblock_card(card_id: str):
+        session = Session()
+        try:
+            # Retrieve the card
+            card = session.query(Figure_card).filter_by(unique_id=card_id).one_or_none()
+            card.state = 'drawn'
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            session.close()
+    
+    @staticmethod
+    def set_forbidden_color(game_id: str, color: str):
+        session = Session()
+        try:
+            game = session.query(Game).filter_by(unique_id=game_id).one()
+            
+            # Validar color
+            if color is not None and color not in ['red', 'green', 'blue', 'yellow']:
+                raise ValueError("Invalid color. Must be 'red', 'green', 'blue', 'yellow' or None")
+                
+            game.forbidden_color = color
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            raise e
         finally:
             session.close()
 
