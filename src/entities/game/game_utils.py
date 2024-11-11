@@ -427,6 +427,7 @@ def block_figure(game_id, player_id, card_id, i, j):
                     card_type = card['type']
                     if card['state'] == 'blocked':
                         raise Exception("Card is already blocked")
+                blocked_player_id = player
                 if card['state']== 'blocked':
                     owner_blocked = True
         

@@ -4,7 +4,7 @@ import os
 from fastapi.testclient import TestClient
 from unittest.mock import patch, MagicMock, AsyncMock
 import pytest
-
+import datetime
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 
 import main
@@ -101,6 +101,17 @@ def mock_block_figure():
 def mock_finish_game():
     with patch('interfaces.game_endpoints.finish_game') as mock:
         yield mock
+        
+@pytest.fixture
+def mock_get_player_name():
+    with patch('entities.game.game_utils.get_player_name') as mock:
+        yield mock
+
+@pytest.fixture
+def mock_datetime_now():
+    with patch('datetime.datetime') as mock_datetime:
+        mock_datetime.now.return_value = datetime(2023, 1, 1, 12, 0, 0)
+        yield mock_datetime
 
 def test_create_game_success(mock_add_player, mock_add_game, mock_game_socket_manager, mock_get_games):
     # Arrange
@@ -273,7 +284,7 @@ def test_leave_game_success(mock_get_game_status, mock_get_game_by_id, mock_remo
     
     mock_get_game_by_id.return_value = {'players': ['0','Test_Player'], 'state': 'waiting', 'creator': '0', 'player_names': ['mauri', 'rimau']}
     mock_game_socket_manager.broadcast_game = AsyncMock()
-
+    mock_get_player_name.return_value = "Test_Player"
     request_data = {'player_id': 'Test_Player'}
     response = client.post("/games/Test_Game/leave", json=request_data)
 
@@ -326,6 +337,7 @@ def test_skip_turn_success(mock_get_game_status, mock_pass_turn, mock_game_socke
     mock_pass_turn.return_value = True
     mock_get_game_status.return_value = []
     mock_game_socket_manager.broadcast_game = AsyncMock()
+    mock_get_player_name.return_value = "Test_Player"
 
     request_data = {'player_id': 'Test_Player'}
     response = client.post("/games/Test_Game/skip", json=request_data)
@@ -362,6 +374,7 @@ def test_make_temp_move_success(mock_get_game_status, mock_game_socket_manager,m
     mock_make_temp_movement.return_value = True
     mock_game_socket_manager.broadcast_game = AsyncMock()
     mock_get_game_status.return_value = []
+    mock_get_player_name.return_value = "Test_Player"
 
     request_data = {'player_id': 'Test_Player','card_id': '100', 'from_x': 1, 'from_y': 1, 'to_x': 1, 'to_y': 1}
     response = client.post("/games/Test_Game/move", json=request_data)
@@ -422,6 +435,7 @@ def test_make_unmove_success(mock_get_game_status, mock_game_socket_manager,mock
     mock_is_players_turn.return_value = True
     mock_game_socket_manager.broadcast_game = AsyncMock()
     mock_get_game_status.return_value = []
+    mock_get_player_name.return_value = "Test_Player"
 
     request_data = {'player_id': 'Test_Player'}
     response = client.post("/games/Test_Game/unmove", json=request_data)
@@ -451,6 +465,7 @@ def test_apply_move_success(mock_get_game_status, mock_game_socket_manager, mock
     mock_apply_temp_movements.return_value = True
     mock_game_socket_manager.broadcast_game = AsyncMock()
     mock_get_game_status.return_value = []
+    mock_get_player_name.return_value = "Test_Player"
 
     request_data = {'player_id': 'Test_Player'}
     response = client.post("/games/Test_Game/apply", json=request_data)
@@ -492,6 +507,7 @@ def test_complete_figure_success(mock_get_game_status, mock_game_socket_manager,
     mock_game_socket_manager.broadcast_game = AsyncMock()
     mock_get_game_status.return_value = []
     mock_complete_figure.return_value = FigureResult.COMPLETED
+    mock_get_player_name.return_value = "Test_Player"
 
     request_data = {'player_id': 'Test_Player', 'x' : 1, 'y' : 4, 'card_id' : 'test_card'}
     response = client.post("/games/Test_Game/completeFigure", json=request_data)
@@ -515,6 +531,7 @@ def test_complete_figure_failure(mock_get_game_status, mock_game_socket_manager,
 def test_block_figure_success(mock_get_game_status, mock_game_socket_manager, mock_block_figure):
     mock_game_socket_manager.broadcast_game = AsyncMock()
     mock_get_game_status.return_value = []
+    mock_get_player_name.return_value = "Test_Player"
 
     request_data = {'player_id': 'Test_Player', 'x' : 1, 'y' : 4, 'card_id' : 'test_card'}
     response = client.post("/games/Test_Game/blockFigure", json=request_data)
