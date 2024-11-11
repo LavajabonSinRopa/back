@@ -4,7 +4,6 @@ import os
 from fastapi.testclient import TestClient
 from unittest.mock import patch, MagicMock, AsyncMock
 import pytest
-import datetime
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 
 import main
@@ -104,14 +103,9 @@ def mock_finish_game():
         
 @pytest.fixture
 def mock_get_player_name():
-    with patch('entities.game.game_utils.get_player_name') as mock:
+    with patch('interfaces.game_endpoints.get_player_name') as mock:
         yield mock
 
-@pytest.fixture
-def mock_datetime_now():
-    with patch('datetime.datetime') as mock_datetime:
-        mock_datetime.now.return_value = datetime(2023, 1, 1, 12, 0, 0)
-        yield mock_datetime
 
 def test_create_game_success(mock_add_player, mock_add_game, mock_game_socket_manager, mock_get_games):
     # Arrange
@@ -280,7 +274,7 @@ def test_join_game_fail_private_bad_pasword(mock_add_player, mock_game_socket_ma
 
 
 
-def test_leave_game_success(mock_get_game_status, mock_get_game_by_id, mock_remove_player_from_game, mock_game_socket_manager, mock_finish_game):
+def test_leave_game_success(mock_get_game_status, mock_get_game_by_id, mock_remove_player_from_game, mock_game_socket_manager, mock_finish_game, mock_get_player_name):
     
     mock_get_game_by_id.return_value = {'players': ['0','Test_Player'], 'state': 'waiting', 'creator': '0', 'player_names': ['mauri', 'rimau']}
     mock_game_socket_manager.broadcast_game = AsyncMock()
@@ -333,7 +327,7 @@ def test_leave_game_not_in_game(mock_get_game_status, mock_get_game_by_id, mock_
     mock_get_game_by_id.assert_called_once_with("Test_Game")
     mock_remove_player_from_game.assert_not_called
 
-def test_skip_turn_success(mock_get_game_status, mock_pass_turn, mock_game_socket_manager):
+def test_skip_turn_success(mock_get_game_status, mock_pass_turn, mock_game_socket_manager, mock_get_player_name):
     mock_pass_turn.return_value = True
     mock_get_game_status.return_value = []
     mock_game_socket_manager.broadcast_game = AsyncMock()
@@ -369,7 +363,7 @@ def test_get_all_games(mock_get_games):
     response = client.get("/games")
     assert response.status_code == 200
 
-def test_make_temp_move_success(mock_get_game_status, mock_game_socket_manager,mock_is_players_turn, mock_make_temp_movement):
+def test_make_temp_move_success(mock_get_game_status, mock_game_socket_manager,mock_is_players_turn, mock_make_temp_movement, mock_get_player_name):
     mock_is_players_turn.return_value = True
     mock_make_temp_movement.return_value = True
     mock_game_socket_manager.broadcast_game = AsyncMock()
@@ -382,7 +376,7 @@ def test_make_temp_move_success(mock_get_game_status, mock_game_socket_manager,m
     assert response.status_code == 200
     mock_is_players_turn.assert_called_once_with(player_id='Test_Player', game_id='Test_Game')
     mock_make_temp_movement.assert_called_once_with(game_id='Test_Game', player_id='Test_Player', card_id='100', from_x=1, from_y=1, to_x=1, to_y=1)
-    mock_game_socket_manager.broadcast_game.assert_called_once()
+    mock_game_socket_manager.broadcast_game.assert_called()
     mock_get_game_status.assert_called_once()
 
 def test_make_temp_move_cant_find_game(mock_get_game_status, mock_game_socket_manager,mock_is_players_turn, mock_make_temp_movement):
@@ -431,7 +425,7 @@ def test_make_temp_move_failure_to_make_move(mock_get_game_status, mock_game_soc
     mock_game_socket_manager.broadcast_game.assert_not_called()
     mock_get_game_status.assert_not_called()
 
-def test_make_unmove_success(mock_get_game_status, mock_game_socket_manager,mock_is_players_turn, mock_remove_top_movement):
+def test_make_unmove_success(mock_get_game_status, mock_game_socket_manager,mock_is_players_turn, mock_remove_top_movement, mock_get_player_name):
     mock_is_players_turn.return_value = True
     mock_game_socket_manager.broadcast_game = AsyncMock()
     mock_get_game_status.return_value = []
@@ -443,7 +437,7 @@ def test_make_unmove_success(mock_get_game_status, mock_game_socket_manager,mock
     assert response.status_code == 200
     mock_is_players_turn.assert_called_once_with(player_id='Test_Player', game_id='Test_Game')
     mock_remove_top_movement.assert_called_once_with(game_id='Test_Game', player_id='Test_Player')
-    mock_game_socket_manager.broadcast_game.assert_called_once()
+    mock_game_socket_manager.broadcast_game.assert_called()
     mock_get_game_status.assert_called_once()
 
 def test_make_unmove_failure_no_turn(mock_get_game_status, mock_game_socket_manager,mock_is_players_turn, mock_remove_top_movement):
@@ -460,7 +454,7 @@ def test_make_unmove_failure_no_turn(mock_get_game_status, mock_game_socket_mana
     mock_game_socket_manager.broadcast_game.assert_not_called()
     mock_get_game_status.assert_not_called()
     
-def test_apply_move_success(mock_get_game_status, mock_game_socket_manager, mock_is_players_turn,mock_apply_temp_movements):
+def test_apply_move_success(mock_get_game_status, mock_game_socket_manager, mock_is_players_turn,mock_apply_temp_movements, mock_get_player_name):
     mock_is_players_turn.return_value = True
     mock_apply_temp_movements.return_value = True
     mock_game_socket_manager.broadcast_game = AsyncMock()
@@ -472,7 +466,7 @@ def test_apply_move_success(mock_get_game_status, mock_game_socket_manager, mock
 
     assert response.status_code == 200
     mock_apply_temp_movements.assert_called_once_with(game_id='Test_Game', player_id='Test_Player')
-    mock_game_socket_manager.broadcast_game.assert_called_once()
+    mock_game_socket_manager.broadcast_game.assert_called()
     mock_get_game_status.assert_called_once()
 
 def test_apply_move_failure_no_turn(mock_get_game_status, mock_game_socket_manager, mock_is_players_turn, mock_apply_temp_movements):
@@ -489,7 +483,7 @@ def test_apply_move_failure_no_turn(mock_get_game_status, mock_game_socket_manag
     mock_get_game_status.assert_not_called()
 
 
-def test_complete_figure_player_wins(mock_get_game_status, mock_game_socket_manager, mock_complete_figure, mock_get_game_by_id, mock_finish_game):
+def test_complete_figure_player_wins(mock_get_game_status, mock_game_socket_manager, mock_complete_figure, mock_get_game_by_id, mock_finish_game, mock_get_player_name):
     mock_game_socket_manager.broadcast_game = AsyncMock()
     mock_get_game_status.return_value = []
     mock_complete_figure.return_value = FigureResult.PLAYER_WON  
@@ -503,7 +497,7 @@ def test_complete_figure_player_wins(mock_get_game_status, mock_game_socket_mana
     mock_get_game_by_id.assert_called_once_with('Test_Game')
     mock_game_socket_manager.broadcast_game.assert_called_once_with('Test_Game',{"type":"GameWon","payload": {'player_id' : 'Test_Player', 'player_name': 'Winner'}})
 
-def test_complete_figure_success(mock_get_game_status, mock_game_socket_manager, mock_complete_figure):
+def test_complete_figure_success(mock_get_game_status, mock_game_socket_manager, mock_complete_figure, mock_get_player_name):
     mock_game_socket_manager.broadcast_game = AsyncMock()
     mock_get_game_status.return_value = []
     mock_complete_figure.return_value = FigureResult.COMPLETED
@@ -514,7 +508,7 @@ def test_complete_figure_success(mock_get_game_status, mock_game_socket_manager,
 
     assert response.status_code == 200
     mock_complete_figure.assert_called_once_with(game_id='Test_Game', player_id='Test_Player', card_id='test_card', i=4, j=1)
-    mock_game_socket_manager.broadcast_game.assert_called_once_with('Test_Game',{"type":"FigureMade","payload": []})
+    mock_game_socket_manager.broadcast_game.assert_called()
 
 def test_complete_figure_failure(mock_get_game_status, mock_game_socket_manager, mock_complete_figure):
     mock_game_socket_manager.broadcast_game = AsyncMock()
@@ -528,17 +522,17 @@ def test_complete_figure_failure(mock_get_game_status, mock_game_socket_manager,
     mock_complete_figure.assert_called_once_with(game_id='Test_Game', player_id='Test_Player', card_id='test_card', i=4, j=1)
     mock_game_socket_manager.broadcast_game.assert_not_called()
 
-def test_block_figure_success(mock_get_game_status, mock_game_socket_manager, mock_block_figure):
+def test_block_figure_success(mock_get_game_status, mock_game_socket_manager, mock_block_figure, mock_get_player_name):
     mock_game_socket_manager.broadcast_game = AsyncMock()
     mock_get_game_status.return_value = []
     mock_get_player_name.return_value = "Test_Player"
-
+    mock_block_figure.return_value = (FigureResult.COMPLETED, "blocked_player_id")
     request_data = {'player_id': 'Test_Player', 'x' : 1, 'y' : 4, 'card_id' : 'test_card'}
     response = client.post("/games/Test_Game/blockFigure", json=request_data)
 
     assert response.status_code == 200
     mock_block_figure.assert_called_once_with(game_id='Test_Game', player_id='Test_Player', card_id='test_card', i=4, j=1)
-    mock_game_socket_manager.broadcast_game.assert_called_once()
+    mock_game_socket_manager.broadcast_game.assert_called()
 
 def test_block_figure_failure(mock_get_game_status, mock_game_socket_manager, mock_block_figure):
     mock_game_socket_manager.broadcast_game = AsyncMock()

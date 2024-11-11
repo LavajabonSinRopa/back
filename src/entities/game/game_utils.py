@@ -442,7 +442,7 @@ def block_figure(game_id, player_id, card_id, i, j):
         figure, color = get_figure(board=board, i = i, j = j)
 
         if game["forbidden_color"] == color:
-            return FigureResult.INVALID
+            return FigureResult.INVALID, -1
 
         if not figure_matches_type(figure_type=card_type, figure=figure):
             raise Exception("Figure doesn't match")
@@ -454,7 +454,7 @@ def block_figure(game_id, player_id, card_id, i, j):
 
         repo.set_forbidden_color(game_id, color)
 
-        return True
+        return True, blocked_player_id
 
     except Exception as e:
         raise e

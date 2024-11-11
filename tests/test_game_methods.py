@@ -379,7 +379,7 @@ def test_block_figure_forbidden_color(mock_repo):
     
     result = block_figure(game_id = games[3]['unique_id'], player_id = games[3]['players'][0]['unique_id'], card_id = games[3]['players'][1]['figure_cards'][0]['unique_id'], i = 0, j = 4)
     
-    assert result == FigureResult.INVALID
+    assert result == (FigureResult.INVALID,-1)
     mock_repo.apply_temp_movements.assert_not_called()
     mock_repo.block_card.assert_not_called()
 
