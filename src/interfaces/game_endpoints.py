@@ -130,9 +130,10 @@ async def cancel_game(game_id: str, request: LeaveGameRequest):
     
     # Avisar a los jugadores que se cancela la partida
     await game_socket_manager.broadcast_game(game_id,{"type":"GameClosed","payload": "Game Closed, disconnected"})
-    await public_manager.broadcast({"type":"CreatedGames","payload": get_games()})
     # Cambiar estado del juego a "finished"
     finish_game(game_id)
+    
+    await public_manager.broadcast({"type":"CreatedGames","payload": get_games()})
     
     return Response(status_code=200)
 
