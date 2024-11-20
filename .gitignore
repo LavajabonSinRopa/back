@@ -5,4 +5,5 @@ __pycache__/
 *.py[cod]
 *$py.class
 test.py
-gamesdata
+tests/test_database_utils.py
+.gitignore

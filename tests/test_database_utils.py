@@ -10,6 +10,14 @@ import io
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 
+settings_file_path = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), '..', 'src', 'entities', 'db', 'settings.py')
+)
+
+# test writes to test db
+with open(settings_file_path, 'w') as settings_file:
+    settings_file.write("DATABASE_FILENAME = 'TEMPORARYTESTDB'")
+
 from entities.db.gamesRepo import repo
 
 NofGames = 10
@@ -663,3 +671,11 @@ class test_games_Repo(unittest.TestCase):
 if __name__ == "__main__":
     unittest.main()
     repo.tear_down()
+
+settings_file_path = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), '..', 'src', 'entities', 'db', 'settings.py')
+)
+
+# non test should write to original db
+with open(settings_file_path, 'w') as settings_file:
+    settings_file.write("DATABASE_FILENAME = 'PROD'")
