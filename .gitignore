@@ -5,5 +5,3 @@ __pycache__/
 *.py[cod]
 *$py.class
 test.py
-tests/test_database_utils.py
-.gitignore
