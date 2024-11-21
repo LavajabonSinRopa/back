@@ -421,7 +421,9 @@ def block_figure(game_id, player_id, card_id, i, j):
             if(player_id==player):
                 continue
             player_cards = repo.get_player(player_id=player)['figure_cards']
-            print(player_cards)
+            #Do not allow blocking of last 2 cards
+            if(len(player_cards)<=2):
+                continue
             for card in player_cards:
                 if card['unique_id'] == card_id:
                     card_type = card['type']
