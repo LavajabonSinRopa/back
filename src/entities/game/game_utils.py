@@ -10,7 +10,6 @@ from ..cards.figure_cards import figure_exists, figure_matches_type
 
 BOARD_LEN = 6
 
-
 class FigureResult(Enum):
     INVALID = 0
     COMPLETED = 1
@@ -223,17 +222,23 @@ def create_figure_cards(game_id):
     random.shuffle(hard_cards)
     random.shuffle(easy_cards)
 
-    # Distribuir cartas fáciles
-    for player in get_players_status(game_id):
-        player_id = player['unique_id']
+    player_ids = [player['unique_id'] for player in get_players_status(game_id)]
+    player_cards = {}
+    for id in player_ids:
+       player_cards[id] = list() 
+
+    # Distribuir cartas
+    for player_id in player_ids:
         for _ in range(amount_easy_cards):
             card_type = easy_cards.pop()
-            repo.create_card(card_type=card_type, card_kind='figure', player_id=player_id,game_id=game_id,state='not drawn')
-    # Distribuir cartas dificiles
-    for player in get_players_status(game_id):
-        player_id = player['unique_id']
+            player_cards[player_id].append(card_type)
         for _ in range(amount_hard_cards):
             card_type = hard_cards.pop()
+            player_cards[player_id].append(card_type)
+
+    for player_id in player_cards:
+        random.shuffle(player_cards[player_id])
+        for card_type in player_cards[player_id]:
             repo.create_card(card_type=card_type, card_kind='figure', player_id=player_id,game_id=game_id,state='not drawn')
 
 def get_move_deck(game_id):
@@ -421,7 +426,9 @@ def block_figure(game_id, player_id, card_id, i, j):
             if(player_id==player):
                 continue
             player_cards = repo.get_player(player_id=player)['figure_cards']
-            print(player_cards)
+            #Do not allow blocking of last 2 cards
+            if(len(player_cards)<=2):
+                continue
             for card in player_cards:
                 if card['unique_id'] == card_id:
                     card_type = card['type']

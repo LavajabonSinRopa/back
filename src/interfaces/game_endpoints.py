@@ -101,7 +101,7 @@ async def leave_game(game_id: str, request: LeaveGameRequest):
     
     game["player_names"].remove(player_name)
     game['players'].remove(request.player_id)
-    if len(game['players']) <= 1:
+    if game['state'] == 'started' and len(game['players']) <= 1:
         finish_game(game_id)
         await game_socket_manager.broadcast_game(game_id,{"type":"GameWon","payload": {'player_id' : game['players'][0], 'player_name': game['player_names'][0]}})
         
